@@ -1,0 +1,12 @@
+node_modules/
+dist/
+coverage/
+.local/
+*.tgz
+packages/protocol/proto/
+.env
+.env.*
+!.env.example
+target/
+*.log
+*.tsbuildinfo

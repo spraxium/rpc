@@ -1,0 +1,48 @@
+{
+  "name": "spraxium-rpc-workspace",
+  "private": true,
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/spraxium/rpc.git"
+  },
+  "homepage": "https://github.com/spraxium/rpc#readme",
+  "bugs": {
+    "url": "https://github.com/spraxium/rpc/issues"
+  },
+  "packageManager": "pnpm@12.14.0",
+  "engines": {
+    "node": ">=22.23.2 <27"
+  },
+  "scripts": {
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck && tsc -p tsconfig.json",
+    "test": "pnpm build && vitest run",
+    "test:framework": "node scripts/test-framework.mjs",
+    "pack:local": "pnpm build && node scripts/pack-local.mjs",
+    "test:packages": "pnpm build && node scripts/test-packages.mjs",
+    "test:java": "pnpm build && mvn -B -f examples/java-client/pom.xml package && vitest run --config tests/interop/vitest.config.ts",
+    "lint": "biome check .",
+    "format": "biome check --write .",
+    "commitlint": "commitlint",
+    "prepare": "husky",
+    "proto:lint": "buf lint && node scripts/check-proto-format.mjs",
+    "proto:generate": "buf generate && biome check --write packages/protocol/src/gen",
+    "proto:check": "node scripts/check-generated.mjs",
+    "proto:breaking": "buf breaking --against compatibility/v1.binpb",
+    "check": "pnpm proto:lint && pnpm proto:breaking && pnpm proto:check && pnpm lint && pnpm build && pnpm typecheck && vitest run && node scripts/test-packages.mjs"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "1.9.4",
+    "@bufbuild/buf": "1.74.0",
+    "@bufbuild/protoc-gen-es": "catalog:",
+    "@commitlint/cli": "20.5.0",
+    "@commitlint/config-conventional": "20.5.0",
+    "@commitlint/types": "20.5.0",
+    "@types/node": "22.20.1",
+    "husky": "9.1.7",
+    "tsdown": "0.23.1",
+    "typescript": "5.9.3",
+    "vitest": "4.1.11"
+  }
+}

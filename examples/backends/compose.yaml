@@ -1,0 +1,30 @@
+services:
+  discord-bot:
+    build:
+      context: ../..
+      dockerfile: examples/backends/Dockerfile
+      target: discord-bot
+    environment:
+      NODE_ENV: production
+      DISCORD_TOKEN: ${DISCORD_TOKEN:?Set DISCORD_TOKEN}
+      SPRAXIUM_RPC_TOKEN: ${SPRAXIUM_RPC_TOKEN:?Set SPRAXIUM_RPC_TOKEN}
+      SPRAXIUM_RPC_HOST: 0.0.0.0
+      SPRAXIUM_RPC_TLS_PROXY: "true"
+      RPC_SHARDING: ${RPC_SHARDING:-false}
+    networks: [rpc-private, internet]
+  dashboard-api:
+    build:
+      context: ../..
+      dockerfile: examples/backends/Dockerfile
+      target: dashboard-api
+    environment:
+      SPRAXIUM_RPC_URL: http://discord-bot:4300
+      SPRAXIUM_RPC_TOKEN: ${SPRAXIUM_RPC_TOKEN:?Set SPRAXIUM_RPC_TOKEN}
+      SPRAXIUM_RPC_PRIVATE_NETWORK: "true"
+    depends_on: [discord-bot]
+    ports: ["127.0.0.1:3000:3000"]
+    networks: [rpc-private]
+networks:
+  rpc-private:
+    internal: true
+  internet: {}

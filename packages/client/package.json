@@ -1,0 +1,39 @@
+{
+  "name": "@spraxium/rpc-client",
+  "version": "0.1.0",
+  "description": "Independent typed Node.js client for Spraxium RPC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/spraxium/rpc.git",
+    "directory": "packages/client"
+  },
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsdown",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.test.json",
+    "lint": "biome check src test"
+  },
+  "dependencies": {
+    "@connectrpc/connect": "catalog:",
+    "@connectrpc/connect-node": "catalog:",
+    "@spraxium/rpc-protocol": "workspace:*"
+  },
+  "engines": {
+    "node": ">=22.23.2 <27"
+  },
+  "license": "Apache-2.0",
+  "publishConfig": {
+    "access": "public"
+  },
+  "sideEffects": false
+}

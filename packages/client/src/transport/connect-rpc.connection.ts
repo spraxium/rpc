@@ -6,10 +6,12 @@ import { RpcGateway } from '@spraxium/rpc-protocol';
 import type { ResolvedRpcClientOptions } from '../interfaces/resolved-rpc-client-options.interface';
 import type { RpcCallOptions } from '../interfaces/rpc-call-options.interface';
 import type { RpcGatewayConnection } from '../interfaces/rpc-gateway-connection.interface';
+
 export class ConnectRpcConnection implements RpcGatewayConnection {
   private readonly sessionManager: Http2SessionManager;
   private readonly agent: HttpAgent | HttpsAgent;
   private readonly gateway;
+
   constructor(private readonly options: ResolvedRpcClientOptions) {
     const url = new URL(options.url);
     this.sessionManager = new Http2SessionManager(url);
@@ -17,6 +19,7 @@ export class ConnectRpcConnection implements RpcGatewayConnection {
       url.protocol === 'https:' ? new HttpsAgent({ keepAlive: true }) : new HttpAgent({ keepAlive: true });
     this.gateway = createClient(RpcGateway, this.createTransport());
   }
+
   async invoke(method: string, payloadJson: Uint8Array, options: RpcCallOptions): Promise<Uint8Array> {
     const response = await this.gateway.invoke(
       { method, payloadJson },
@@ -28,10 +31,12 @@ export class ConnectRpcConnection implements RpcGatewayConnection {
     );
     return response.payloadJson;
   }
+
   close(): void {
     this.sessionManager.abort();
     this.agent.destroy();
   }
+
   private createTransport() {
     const limits = {
       baseUrl: this.options.url,
@@ -39,11 +44,14 @@ export class ConnectRpcConnection implements RpcGatewayConnection {
       writeMaxBytes: this.options.maxPayloadBytes * 2 + 4096,
       defaultTimeoutMs: this.options.timeoutMs,
     };
+
     if (this.options.protocol === 'grpc')
       return createGrpcTransport({ ...limits, sessionManager: this.sessionManager });
+
     if (this.options.httpVersion === '1.1') {
       return createConnectTransport({ ...limits, httpVersion: '1.1', nodeOptions: { agent: this.agent } });
     }
+
     return createConnectTransport({ ...limits, httpVersion: '2', sessionManager: this.sessionManager });
   }
 }

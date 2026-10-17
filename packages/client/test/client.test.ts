@@ -17,6 +17,7 @@ describe('client and JSON contract', () => {
   ])('rejects non-JSON values (%s)', (value) => {
     expect(() => encodeJson(value, 1024)).toThrow();
   });
+
   it('rejects cycles, getters, symbol properties and toJSON without calling them', () => {
     const sparseWithProperty = Object.assign([1, 2], { extra: 3 });
     Reflect.deleteProperty(sparseWithProperty, '1');
@@ -52,6 +53,7 @@ describe('client and JSON contract', () => {
       list: [1, true, 'hello'],
     });
   });
+
   it('infers the explicit shared contract without a string index signature', () => {
     interface Contract {
       'guild.stats': {
@@ -72,6 +74,7 @@ describe('client and JSON contract', () => {
     >();
     client.close();
   });
+
   it('rejects remote plaintext by default and invalid connection configuration', () => {
     expect(() => createRpcClient({ url: 'http://example.com', token: 'test' })).toThrow('TLS');
     expect(() => createRpcClient({ url: 'https://example.com', token: '' })).toThrow('token');
@@ -79,6 +82,7 @@ describe('client and JSON contract', () => {
       createRpcClient({ url: 'https://example.com', token: 'test', protocol: 'grpc', httpVersion: '1.1' }),
     ).toThrow('HTTP/2');
   });
+
   it('reports an unavailable server and disallows calls after closing', async () => {
     const client = createRpcClient({ url: 'http://127.0.0.1:1', token: 'test', timeoutMs: 1000 });
     await expect(client.call('echo', null)).rejects.toMatchObject({ code: Code.Unavailable });

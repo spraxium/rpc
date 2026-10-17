@@ -1,5 +1,6 @@
 import type { RpcMethodContract } from '@spraxium/rpc-protocol';
 import type { RpcCallOptions } from './rpc-call-options.interface';
+
 export interface RpcClient<
   Contract extends {
     [Method in keyof Contract]: RpcMethodContract;
@@ -10,5 +11,6 @@ export interface RpcClient<
     input: Contract[Method]['input'],
     options?: RpcCallOptions,
   ): Promise<Contract[Method]['output']>;
+
   close(): void;
 }

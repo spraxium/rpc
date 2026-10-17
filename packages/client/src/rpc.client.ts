@@ -4,6 +4,7 @@ import type { ResolvedRpcClientOptions } from './interfaces/resolved-rpc-client-
 import type { RpcCallOptions } from './interfaces/rpc-call-options.interface';
 import type { RpcClient } from './interfaces/rpc-client.interface';
 import type { RpcGatewayConnection } from './interfaces/rpc-gateway-connection.interface';
+
 export class NodeRpcClient<
   Contract extends {
     [Method in keyof Contract]: RpcMethodContract;
@@ -12,6 +13,7 @@ export class NodeRpcClient<
 {
   private readonly pending = new Set<AbortController>();
   private closed = false;
+
   constructor(
     private readonly options: ResolvedRpcClientOptions,
     private readonly connection: RpcGatewayConnection,
@@ -19,6 +21,7 @@ export class NodeRpcClient<
     this.call = this.call.bind(this);
     this.close = this.close.bind(this);
   }
+
   async call<Method extends keyof Contract & string>(
     method: Method,
     input: Contract[Method]['input'],
@@ -28,6 +31,7 @@ export class NodeRpcClient<
     const payload = this.encodeInput(input);
     const controller = new AbortController();
     this.pending.add(controller);
+
     try {
       const response = await this.connection.invoke(method, payload, {
         timeoutMs: options.timeoutMs,
@@ -41,6 +45,7 @@ export class NodeRpcClient<
       this.pending.delete(controller);
     }
   }
+
   close(): void {
     if (this.closed) return;
     this.closed = true;
@@ -48,6 +53,7 @@ export class NodeRpcClient<
     this.pending.clear();
     this.connection.close();
   }
+
   private validateCall(options: RpcCallOptions): void {
     if (this.closed) throw new ConnectError('RPC client is closed.', Code.Unavailable);
     if (
@@ -57,6 +63,7 @@ export class NodeRpcClient<
       throw new ConnectError('Invalid RPC timeout.', Code.InvalidArgument);
     }
   }
+
   private encodeInput(input: unknown): Uint8Array {
     try {
       return encodeJson(input, this.options.maxPayloadBytes);

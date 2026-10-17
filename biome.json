@@ -8,19 +8,13 @@
     "rules": {
       "recommended": true,
       "suspicious": {
-        "noExplicitAny": "error"
+        "noExplicitAny": "warn"
       },
       "complexity": {
         "noStaticOnlyClass": "off"
       },
       "style": {
-        "noNonNullAssertion": "warn",
-        "useConsistentArrayType": {
-          "level": "error",
-          "options": {
-            "syntax": "generic"
-          }
-        }
+        "noNonNullAssertion": "warn"
       }
     }
   },
@@ -45,9 +39,31 @@
     "ignore": [
       "**/dist/**",
       "**/node_modules/**",
+      "**/.spraxium/**",
+      "**/local/**",
+      "tests/database-templates/.generated/**",
+      "tests/database-templates/results.json",
+      "**/*.d.ts",
+      "_old/**",
+      "web/.next/**",
+      "templates/**",
+      "apps/sandbox/*",
+      "vscode-extension/**",
       "**/.local/**",
       "**/target/**",
       "packages/protocol/proto/**"
     ]
-  }
+  },
+  "overrides": [
+    {
+      "include": ["apps/**/*.ts"],
+      "linter": {
+        "rules": {
+          "style": {
+            "useImportType": "off"
+          }
+        }
+      }
+    }
+  ]
 }

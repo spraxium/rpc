@@ -42,7 +42,7 @@ Installation sets up Husky. The pre-commit hook checks staged files with Biome; 
 5. For adapter changes, also run `pnpm test:framework --framework PATH` with a compatible framework checkout. For transport changes, run `pnpm test:java`.
 6. Commit using the convention below and open a pull request against `main`.
 
-Keep one class per production file and dependencies explicit in constructors. Interfaces and types belong in their own files. Use `Array<T>` and `ReadonlyArray<T>`; explicit `any` is rejected by Biome.
+Keep one class per production file and dependencies explicit in constructors. Interfaces and types belong in their own files. Use `Array<T>` and `ReadonlyArray<T>`; prefer `unknown` to `any`.
 
 The client must remain independent of Discord.js and the framework runtime. Keep `proto/` as the canonical schema and regenerate bindings with `pnpm proto:generate`. Preserve public imports and wire compatibility. Run packaging and tests that consume those builds sequentially, since prepack can rebuild dependencies.
 

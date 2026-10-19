@@ -19,6 +19,7 @@
   "files": ["dist"],
   "scripts": {
     "build": "tsdown",
+    "prepublishOnly": "node ../../scripts/check-framework-release.mjs",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "lint": "biome check src test"

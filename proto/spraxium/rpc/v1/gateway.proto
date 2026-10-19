@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package spraxium.rpc.v1;
+
+option java_multiple_files = true;
+option java_package = "io.spraxium.rpc.v1";
+
+service RpcGateway {
+  rpc Invoke(InvokeRequest) returns (InvokeResponse);
+}
+
+message InvokeRequest {
+  string method = 1;
+  bytes payload_json = 2;
+}
+
+message InvokeResponse {
+  bytes payload_json = 1;
+}

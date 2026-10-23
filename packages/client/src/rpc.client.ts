@@ -22,12 +22,17 @@ export class NodeRpcClient<
     this.close = this.close.bind(this);
   }
 
-  async call<Method extends keyof Contract & string>(
+  call<Method extends keyof Contract & string>(
     method: Method,
     input: Contract[Method]['input'],
+    options?: RpcCallOptions,
+  ): Promise<Contract[Method]['output']>;
+  async call(
+    method: keyof Contract & string,
+    input: unknown,
     options: RpcCallOptions = {},
-  ): Promise<Contract[Method]['output']> {
-    this.validateCall(options);
+  ): Promise<unknown> {
+    this.validateCall(method, options);
     const payload = this.encodeInput(input);
     const controller = new AbortController();
     this.pending.add(controller);
@@ -37,7 +42,7 @@ export class NodeRpcClient<
         timeoutMs: options.timeoutMs,
         signal: options.signal ? AbortSignal.any([controller.signal, options.signal]) : controller.signal,
       });
-      return decodeJson(response, this.options.maxPayloadBytes) as Contract[Method]['output'];
+      return decodeJson(response, this.options.maxPayloadBytes);
     } catch (error) {
       if (error instanceof ConnectError) throw error;
       throw new ConnectError('Invalid RPC response.', Code.DataLoss);
@@ -54,8 +59,11 @@ export class NodeRpcClient<
     this.connection.close();
   }
 
-  private validateCall(options: RpcCallOptions): void {
+  private validateCall(method: string, options: RpcCallOptions): void {
     if (this.closed) throw new ConnectError('RPC client is closed.', Code.Unavailable);
+    if (options.signal?.aborted) throw new ConnectError('RPC call canceled.', Code.Canceled);
+    if (typeof method !== 'string' || !/^[a-zA-Z][a-zA-Z0-9._-]{0,127}$/.test(method))
+      throw new ConnectError('Invalid RPC method name.', Code.InvalidArgument);
     if (
       options.timeoutMs !== undefined &&
       (!Number.isSafeInteger(options.timeoutMs) || options.timeoutMs <= 0 || options.timeoutMs > 2147483647)

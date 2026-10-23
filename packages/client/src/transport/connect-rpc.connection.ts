@@ -8,15 +8,18 @@ import type { RpcCallOptions } from '../interfaces/rpc-call-options.interface';
 import type { RpcGatewayConnection } from '../interfaces/rpc-gateway-connection.interface';
 
 export class ConnectRpcConnection implements RpcGatewayConnection {
-  private readonly sessionManager: Http2SessionManager;
-  private readonly agent: HttpAgent | HttpsAgent;
+  private readonly sessionManager?: Http2SessionManager;
+  private readonly agent?: HttpAgent | HttpsAgent;
   private readonly gateway;
 
   constructor(private readonly options: ResolvedRpcClientOptions) {
     const url = new URL(options.url);
-    this.sessionManager = new Http2SessionManager(url);
-    this.agent =
-      url.protocol === 'https:' ? new HttpsAgent({ keepAlive: true }) : new HttpAgent({ keepAlive: true });
+    if (options.httpVersion === '1.1') {
+      this.agent =
+        url.protocol === 'https:' ? new HttpsAgent({ keepAlive: true }) : new HttpAgent({ keepAlive: true });
+    } else {
+      this.sessionManager = new Http2SessionManager(url);
+    }
     this.gateway = createClient(RpcGateway, this.createTransport());
   }
 
@@ -33,8 +36,8 @@ export class ConnectRpcConnection implements RpcGatewayConnection {
   }
 
   close(): void {
-    this.sessionManager.abort();
-    this.agent.destroy();
+    this.sessionManager?.abort();
+    this.agent?.destroy();
   }
 
   private createTransport() {

@@ -4,6 +4,8 @@ import type { RpcClientOptions } from '../interfaces/rpc-client-options.interfac
 
 export class RpcClientConfigResolver {
   resolve(options: RpcClientOptions): ResolvedRpcClientOptions {
+    if (options.allowInsecure !== undefined && typeof options.allowInsecure !== 'boolean')
+      throw new Error('RPC allowInsecure must be a boolean.');
     const url = new URL(options.url);
     if (
       !['https:', 'http:'].includes(url.protocol) ||
@@ -25,8 +27,13 @@ export class RpcClientConfigResolver {
       );
     }
 
-    if (!options.token || /\s/.test(options.token)) {
-      throw new Error('RPC token is required and must not contain whitespace.');
+    if (
+      typeof options.token !== 'string' ||
+      !options.token ||
+      options.token.length > 4096 ||
+      !/^[\x21-\x7E]+$/.test(options.token)
+    ) {
+      throw new Error('RPC token must contain 1-4096 printable ASCII characters without whitespace.');
     }
 
     const resolved = {
@@ -44,6 +51,10 @@ export class RpcClientConfigResolver {
 
     if (options.protocol === 'grpc' && options.httpVersion === '1.1')
       throw new Error('gRPC requires HTTP/2.');
+    if (options.protocol !== undefined && options.protocol !== 'connect' && options.protocol !== 'grpc')
+      throw new Error('RPC protocol must be connect or grpc.');
+    if (options.httpVersion !== undefined && options.httpVersion !== '2' && options.httpVersion !== '1.1')
+      throw new Error('RPC HTTP version must be 2 or 1.1.');
 
     return resolved;
   }

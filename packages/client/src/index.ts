@@ -11,28 +11,6 @@ export type { RpcCallOptions } from './interfaces/rpc-call-options.interface';
 export type { RpcClientOptions } from './interfaces/rpc-client-options.interface';
 export type { RpcClient } from './interfaces/rpc-client.interface';
 
-/**
- * Creates a reusable client for calling RPC handlers over Connect or gRPC.
- *
- * @typeParam Contract - Maps method names to their input and output types.
- * @param options - Server URL, service token, transport settings and request limits.
- * @returns A typed client. Call `close()` on shutdown to abort pending calls and release connections.
- * @throws {Error} If the URL, token, transport settings or request limits are invalid.
- *
- * @example
- * ```ts
- * const rpc = createRpcClient({
- *   url: 'http://127.0.0.1:4300',
- *   token: process.env.SPRAXIUM_RPC_TOKEN ?? '',
- * });
- *
- * try {
- *   await rpc.call('guild.stats', { guildId: '123456789012345678' });
- * } finally {
- *   rpc.close();
- * }
- * ```
- */
 export function createRpcClient<
   Contract extends {
     [Method in keyof Contract]: RpcMethodContract;

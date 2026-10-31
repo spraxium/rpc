@@ -1,4 +1,4 @@
-FROM node:24.19.0-bookworm-slim AS build
+FROM node:24.22.1-bookworm-slim AS build
 RUN npm install -g pnpm@12.14.0
 WORKDIR /workspace
 COPY . .

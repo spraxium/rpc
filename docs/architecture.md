@@ -5,12 +5,10 @@
 ```mermaid
 flowchart LR
   P[Canonical proto / v1] --> TS[TypeScript protocol package]
-  P --> J[Generated Java bindings]
   TS --> C[Node SDK]
   TS --> A[Spraxium adapter]
   N[NestJS / Hono / Fastify backend] --> C
   C -->|Connect or gRPC + TLS| A
-  J -->|gRPC + TLS| A
   A --> H[Public framework integration hooks]
   H --> D[Existing DI providers and Discord client]
 ```
@@ -68,4 +66,4 @@ Deploy the external API separately from the Discord application. Use TLS on the 
 
 One gateway manages one native Discord shard group. Adding replicas of the gateway does not create shared ownership or distributed routing. To span hosts, partition shard groups explicitly and provide ownership-aware routing at the application boundary. A broker/control plane is a later design decision requiring durable routing and ownership semantics; adding Redis alone would not provide them.
 
-The initial implementation uses structured safe logs, not a mandatory observability backend. Request IDs, registered method names, duration and status support diagnosis. Future tracing should preserve context through both HTTP and IPC without logging payloads or bearer metadata.
+Completion logs contain request IDs, registered method names, duration and status. They exclude payloads and bearer metadata.

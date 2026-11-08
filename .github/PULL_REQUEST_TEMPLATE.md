@@ -21,7 +21,7 @@
 - [ ] `pnpm typecheck`
 - [ ] `pnpm test`
 - [ ] Framework compatibility checked when adapter behavior changes
-- [ ] Java interoperability checked when transport behavior changes
+- [ ] gRPC interoperability checked when transport behavior changes
 
 ## Checklist
 

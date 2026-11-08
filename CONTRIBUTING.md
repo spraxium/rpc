@@ -10,7 +10,6 @@ Requirements:
 
 - Node.js `>=22.23.2 <27`; Node 24 is the development default.
 - pnpm 12.14.0, as pinned in `package.json`.
-- JDK 17+ and Maven 3.9+ for Java interoperability checks.
 
 ```bash
 git clone https://github.com/spraxium/rpc.git
@@ -28,8 +27,8 @@ Installation sets up Husky. The pre-commit hook checks staged files with Biome; 
 | `packages/client` | Standalone Node.js RPC client |
 | `packages/spraxium` | Spraxium framework adapter |
 | `proto` | Canonical cross-language transport schema |
-| `examples` | Backend and Java reference applications |
-| `tests` | Cross-language interoperability checks |
+| `examples` | JavaScript bot, backends and console clients |
+| `tests` | Example, package installation and gRPC checks |
 | `.github` | Repository checks and pull request template |
 | `.husky` | Local commit hooks |
 
@@ -39,7 +38,7 @@ Installation sets up Husky. The pre-commit hook checks staged files with Biome; 
 2. Keep changes focused on the relevant package or repository tooling.
 3. Run `pnpm lint` before committing.
 4. For implementation changes, run `pnpm check` to build packages and validate types, tests, schema compatibility and package archives.
-5. For adapter changes, also run `pnpm test:framework --framework PATH` with a compatible framework checkout. For transport changes, run `pnpm test:java`.
+5. Run `pnpm test:examples` for example changes and `pnpm test:interop` for transport changes. For adapter changes, also run `pnpm test:framework` and verify the application on a compatible framework build. See [framework compatibility](docs/framework-compatibility.md). These local tests do not log into Discord.
 6. Commit using the convention below and open a pull request against `main`.
 
 Keep one class per production file and dependencies explicit in constructors. Interfaces and types belong in their own files. Use `Array<T>` and `ReadonlyArray<T>`; prefer `unknown` to `any`.

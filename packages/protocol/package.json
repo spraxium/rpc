@@ -23,7 +23,8 @@
   "scripts": {
     "build": "tsdown",
     "typecheck": "tsc --noEmit",
-    "prepack": "node ../../scripts/stage-proto.mjs"
+    "prepack": "node -e \"require('node:fs').cpSync('../../proto','proto',{recursive:true})\"",
+    "postpack": "node -e \"const fs=require('node:fs'),p=require('node:path').resolve('proto');if(require('./package.json').name!=='@spraxium/rpc-protocol')throw Error('Wrong package');if(fs.existsSync(p))fs.rmSync(p,{recursive:true,force:true});\""
   },
   "dependencies": {
     "@bufbuild/protobuf": "catalog:"

@@ -4,46 +4,27 @@ Expose selected bot methods to a backend over Connect or gRPC. Handlers use exis
 
 ## Installation
 
-```bash
-pnpm example:prepare --framework ../framework
-```
-
 The adapter has not been released to npm. The public framework 0.3.2 does not contain all required hooks; use the compatible local framework checkout. Once those hooks are released and validated, installation will use `pnpm add @spraxium/rpc`. The [compatibility record](../../compatibility/framework.json) and `prepublishOnly` gate prevent publishing the adapter before that dependency is recorded. Start with the [integration tutorial](../../docs/getting-started.md).
 
 ## Register handlers in existing modules
 
-```typescript
-import { Inject, Injectable, Module } from '@spraxium/common';
-import { RpcHandler, RpcModule } from '@spraxium/rpc';
-import { z } from 'zod';
+The [JavaScript bot example](../../examples/bot/README.md) separates Discord lookups in `GuildService` from method registration in `GuildRpcService`. Both are ordinary framework providers. `AppModule` imports `RpcModule` and the feature module, while the plugin supplies the listener settings.
 
-@Injectable()
-class GuildService {
-  getStats(guildId: string) {
-    return { guildId, members: 42, premium: false };
-  }
-}
+```javascript
+import { Module } from '@spraxium/common';
+import { RpcModule } from '@spraxium/rpc';
+import { GuildModule } from './guild.module.js';
+import { GuildRpcService } from './guild-rpc.service.js';
 
-@Injectable()
-class GuildRpcService {
-  constructor(@Inject(GuildService) private readonly guilds: GuildService) {}
-
-  @RpcHandler('guild.stats', {
-    routing: 'guild',
-    permissions: ['guild:read'],
-    schema: z.object({ guildId: z.string() }).strict(),
-  })
-  async stats(input: { guildId: string }) {
-    return this.guilds.getStats(input.guildId);
-  }
-}
-
-@Module({
-  imports: [RpcModule],
-  providers: [GuildService, GuildRpcService],
-})
 export class AppModule {}
+
+Module({
+  imports: [RpcModule, GuildModule],
+  providers: [GuildRpcService],
+})(AppModule);
 ```
+
+[GuildRpcService](../../examples/bot/src/guild-rpc.service.js) registers `RpcHandler('guild.stats', options)` by applying it to the method descriptor. JavaScript uses the same decorator functions as TypeScript, with explicit constructor metadata for injection. The [tutorial](../../docs/getting-started.md) explains the setup.
 
 Install `zod` when using this example. A schema is any synchronous object with `parse(input: unknown): unknown`; Zod is optional. The parser may reject or transform input, but may not change `guildId`. Add `responseSchema` to validate or project the returned DTO. Asynchronous schemas are rejected, and schema errors are redacted. TypeScript types do not validate incoming data. Without schemas, the JSON contract and guild routing identifier are still validated.
 
@@ -51,7 +32,7 @@ Install `zod` when using this example. A schema is any synchronous object with `
 
 ## Configuration
 
-```typescript
+```javascript
 import { defineConfig } from '@spraxium/core';
 import { defineRpc } from '@spraxium/rpc';
 
@@ -89,11 +70,9 @@ Omitting permissions, or using an empty permissions list, is a startup error unl
 
 ## Handler context and cancellation
 
-```typescript
-import type { RpcContext } from '@spraxium/rpc';
-
+```javascript
 class StatusService {
-  status(_input: unknown, context: RpcContext) {
+  status(_input, context) {
     context.signal.throwIfAborted();
     return { caller: context.identity.id, requestId: context.requestId };
   }
@@ -143,7 +122,7 @@ Use TLS for remote production connections. For direct TLS, set `tls: { key: read
 
 Expose only the gateway path `/spraxium.rpc.v1.RpcGateway/Invoke`. Do not expose raw shard IPC. Restrict network access, provision scoped credentials for each backend, rotate secrets through deployment configuration, and add perimeter connection limits for untrusted networks. The simple credential rate limiter applies after protocol decoding; bounded transport message/header limits apply before handler execution.
 
-The [runnable examples](../../examples/backends/README.md) include NestJS, Hono and Fastify backends and a direct or sharded Discord bot. The container configuration needs the same compatible framework release before it can run. See [the client SDK](../client/README.md), [the protocol](../protocol/README.md) and [HTTP migration](../../docs/http-migration.md).
+The [runnable examples](../../examples/README.md) include NestJS, Hono and Fastify backends and a direct or sharded Discord bot. See [the client SDK](../client/README.md), [the protocol](../protocol/README.md) and [HTTP migration](../../docs/http-migration.md).
 
 ## RPC and Signal
 

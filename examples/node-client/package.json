@@ -1,0 +1,16 @@
+{
+  "name": "@spraxium/rpc-example-node-client",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node --env-file-if-exists=../../.env src/main.js",
+    "start:cjs": "node --env-file-if-exists=../../.env commonjs.cjs"
+  },
+  "dependencies": {
+    "@spraxium/rpc-client": "workspace:*"
+  },
+  "engines": {
+    "node": ">=22.23.2 <27"
+  }
+}

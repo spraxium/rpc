@@ -8,7 +8,7 @@ Authentication is `authorization: Bearer <service token>` metadata. Deadlines an
 
 1. Edit the canonical schema only when the transport changes; custom handler additions do not alter it.
 2. Preserve field numbers/types and reserve removed field numbers/names. An incompatible wire change requires `spraxium.rpc.v2` alongside v1.
-3. Run `pnpm proto:generate`, `pnpm proto:lint`, `pnpm proto:breaking`, `pnpm proto:check` and language interoperability checks.
+3. Run `pnpm proto:generate`, `pnpm proto:lint`, `pnpm proto:breaking`, `pnpm proto:check` and `pnpm test:interop`.
 4. Commit regenerated TypeScript. Package builds stage the canonical `.proto` into the protocol archive automatically.
 
 `compatibility/v1.binpb` captures the accepted v1 contract at extraction. Normal changes must remain compatible with this baseline and, in pull requests, the target branch. Updating the baseline is an explicit protocol governance decision, never a routine fix for failing checks.
@@ -20,7 +20,6 @@ Transport namespace, npm SemVer and application method versions are separate. A 
 | Consumer | Current status |
 | --- | --- |
 | Node.js / TypeScript | Maintained typed SDK and package-install checks |
-| Java | Generated gRPC reference client, real HTTP/2 interoperability tests |
 | Other gRPC languages | Schema available; no SDK or tested-support claim yet |
 | Browser | No public SDK; service tokens must remain in the backend |
 

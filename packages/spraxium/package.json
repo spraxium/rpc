@@ -19,7 +19,7 @@
   "files": ["dist"],
   "scripts": {
     "build": "tsdown",
-    "prepublishOnly": "node ../../scripts/check-framework-release.mjs",
+    "prepublishOnly": "node -e \"const c=require('../../compatibility/framework.json'),p=require('./package.json').peerDependencies;if(!/^[a-f0-9]{40}$/.test(c.ref??'')||!c.peers||['common','core','logger'].some(n=>typeof c.peers['@spraxium/'+n]!=='string'||c.peers['@spraxium/'+n]!==p['@spraxium/'+n]))throw Error('Record a verified compatible framework release before publishing.');\"",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "lint": "biome check src test"

@@ -1,7 +1,0 @@
-{
-  "extends": "../../tsconfig.base.json",
-  "compilerOptions": {
-    "rootDir": "."
-  },
-  "include": ["bot", "hono", "nest", "fastify", "interfaces", "environment.service.ts", "spraxium.config.ts"]
-}

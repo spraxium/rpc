@@ -1,159 +1,125 @@
-# Connect a Spraxium bot to a backend
+# Connect a bot to a backend
 
-The bot owns its Discord connection and application services. The backend owns its web routes, sessions and user authorization. RPC lets the backend call a small set of bot methods without loading the bot or sharing its Discord token. This tutorial starts with one guild statistics method, then explains validation, permissions, shutdown and deployment.
+The bot keeps its Discord connection and application services. The backend handles web routes, sessions and user authorization. RPC lets that backend call selected bot methods without loading Discord.js or sharing the Discord token. This tutorial follows the JavaScript examples included in the repository.
 
-## Start with compatible packages
+## Build the packages
 
-The bot adapter needs module integrations, discovery of existing DI instances, an application-ready hook and awaited parent shutdown. These hooks exist in the local framework checkout and are not in the public framework release. Do not install the public framework and expect the adapter to work. The release status is recorded in [framework compatibility](framework-compatibility.md).
-
-For the current development version, clone this repository alongside a compatible framework checkout. From the RPC repository, run these commands. Preparation builds and packs both repositories, then installs the example in `.local/`. It does not change workspace dependencies or overwrite an environment file.
+Use Node.js `>=22.23.2 <27` and the pnpm version pinned in `package.json`. From the repository root, install dependencies and build the three RPC packages:
 
 ```bash
 pnpm install --frozen-lockfile
-pnpm example:prepare --framework ../framework
+pnpm build
 ```
 
-Once compatible releases are published, existing bot applications will install `@spraxium/rpc`, while backends install `@spraxium/rpc-client`. Backends do not need the framework. Until then, `pnpm pack:local` produces archives for protocol/client development, and the example preparation command also includes the compatible framework archives.
+The bot adapter requires framework hooks that are absent from public Spraxium 0.3.2. Install matching packages from a compatible framework build before running the bot. The [compatibility guide](framework-compatibility.md) explains the required hooks and release gate. There is no automatic framework preparation step. If a compatible bot is already running, the backend examples can connect to it directly.
 
-## Configure a shared secret
+For an application outside this workspace, use `pnpm pack` in `packages/protocol`, `packages/client` and, for the bot, `packages/spraxium`. Install the protocol archive with the client or adapter archive so their dependency resolves locally. The packages have not been published to npm yet. The HTTP backend needs only the client and protocol; it does not need the framework archives.
 
-Create a different RPC token for each backend that needs different permissions. It must be a random string between 32 and 4096 printable ASCII characters without whitespace. This token is separate from the Discord bot token. Keep it in the bot and backend environments; a browser should never receive it.
+## Set the credentials
+
+Copy `.env.example` to `.env` in the repository root. Set `DISCORD_TOKEN` for the bot, `SPRAXIUM_RPC_TOKEN` for both processes, and `SPRAXIUM_RPC_URL=http://127.0.0.1:4300` for the backend. The start commands load this file through Node. Existing shell variables take precedence.
+
+Generate a separate RPC token with the following command. Use 32–4096 printable ASCII characters without whitespace. Keep the token in server configuration and give different credentials to backends that need different permissions.
 
 ```bash
 node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"
 ```
 
-For the prepared example, copy `.env.example` to `.env` in the RPC repository and fill in `DISCORD_TOKEN` and `SPRAXIUM_RPC_TOKEN`. Keep `SPRAXIUM_RPC_URL=http://127.0.0.1:4300`. The example runner loads this file with Node's built-in environment loader. Variables already set by the shell or deployment environment take precedence. Both terminals read the same file, so the backend and bot receive the same RPC secret.
+## Configure the plugin
 
-In an existing bot, put the RPC configuration in `spraxium.config.ts`. Importing `defineRpc` preserves the same `definePlugin` and `ConfigStore` behavior as the other Spraxium plugins. A token and its permissions are enough for a local listener.
+The bot's [spraxium.config.js](../examples/bot/spraxium.config.js) adds `defineRpc` to the framework's plugins array. The minimal configuration enables a loopback listener and grants the backend permission to read guild statistics:
 
-```typescript
+```javascript
 import { defineConfig } from '@spraxium/core';
 import { defineRpc } from '@spraxium/rpc';
 
 export default defineConfig({
-  plugins: [
-    defineRpc({
-      token: process.env.SPRAXIUM_RPC_TOKEN ?? '',
-      permissions: ['guild:read'],
-    }),
-  ],
+  plugins: [defineRpc({
+    token: process.env.SPRAXIUM_RPC_TOKEN ?? '',
+    permissions: ['guild:read'],
+  })],
 });
 ```
 
-The default address is `127.0.0.1:4300`, with a ten-second timeout, 1 MiB JSON payload limit, 100 concurrent executions and 120 requests per credential per minute. Omit the plugin or set `enabled: false` to disable the listener. A configured plugin is enabled by default. Limits and network settings are listed in the [adapter reference](../packages/spraxium/README.md).
+The defaults are port 4300, a ten-second timeout, a 1 MiB JSON limit, 100 concurrent executions and 120 requests per credential per minute. Startup rejects invalid credentials before opening the listener. Omit the plugin or set `enabled: false` to disable RPC. See the [adapter reference](../packages/spraxium/README.md) for all options.
 
-## Register the module
+## Register the module and services
 
-Add `RpcModule` to the root application module. Keep business services in their existing feature modules and export services that another module needs to inject. The adapter discovers decorated methods on the actual provider instances; it does not construct another copy of your service.
+Import `RpcModule` in the application module alongside your feature modules. [AppModule](../examples/bot/src/app.module.js) imports the guild module and registers its RPC provider. `GuildModule` exports `GuildService`, allowing the provider to receive the same service instance used elsewhere in the bot.
 
-```typescript
+```javascript
 import { Module } from '@spraxium/common';
 import { RpcModule } from '@spraxium/rpc';
-import { GuildModule } from './guilds/guild.module';
+import { GuildModule } from './guild.module.js';
+import { GuildRpcService } from './guild-rpc.service.js';
 
-@Module({ imports: [RpcModule, GuildModule] })
 export class AppModule {}
+
+Module({
+  imports: [RpcModule, GuildModule],
+  providers: [GuildRpcService],
+})(AppModule);
 ```
 
-Importing the module without the plugin leaves the gateway disabled. Configuring the plugin without importing the module does not register the bot-side providers. Keep both registrations together when reviewing an integration.
+Both the module import and plugin configuration are required. The plugin supplies settings; the module registers providers and handler discovery.
 
-## Share a small contract
+The examples call decorator functions directly because plain JavaScript does not emit TypeScript decorator metadata. [GuildService](../examples/bot/src/guild.service.js) declares its constructor's `design:paramtypes` and injection token explicitly. [GuildRpcService](../examples/bot/src/guild-rpc.service.js) does the same for its service dependency. Keep those declarations beside their class when adding constructor parameters. Load `reflect-metadata` before registering the classes, as the bot entry point does.
 
-Put the application contract in a types-only file or package that the bot and backend can both import. It describes method names, inputs and outputs. It should not import Discord.js, bot services or DI decorators. A method name also serves as an application API version boundary; use a new name when consumers need a breaking change.
+## Expose a method
 
-```typescript
-export interface BotRpcContract {
-  'guild.stats': {
-    input: { guildId: string };
-    output: { members: number; premium: boolean; shardId: number };
-  };
-}
+`GuildService.getStats` reads the joined guild from the Discord client's cache and returns `{ members, premium, shardId }`. It throws an intentional `NotFound` error when the guild is absent. It returns selected fields rather than a Discord object.
+
+`GuildRpcService.stats` delegates to that service. Its method registration selects guild routing, requires `guild:read` and validates the input and response with Zod. The complete provider is in [guild-rpc.service.js](../examples/bot/src/guild-rpc.service.js). The registration uses the method's property descriptor:
+
+```javascript
+RpcHandler('guild.stats', {
+  routing: 'guild',
+  permissions: ['guild:read'],
+  schema: z.object({ guildId: z.string() }).strict(),
+})(GuildRpcService.prototype, 'stats',
+  Object.getOwnPropertyDescriptor(GuildRpcService.prototype, 'stats'));
 ```
 
-The contract provides TypeScript inference. It cannot verify a value arriving over the network. Use a synchronous schema on the bot when the method accepts structured data. `schema` validates input and `responseSchema` validates or projects output before transmission. Any object with `parse(value: unknown): unknown` works; a validation library is optional. The example repository uses Zod in its demo application only.
+Zod is an example dependency, not a required RPC dependency. Any synchronous schema with a `parse` method can validate or transform input and output. Guild routing additionally validates the top-level `guildId` as a positive unsigned 64-bit decimal string. A schema cannot change that identifier. Send snowflakes as strings to preserve precision.
 
-## Expose the existing service
+## Start the bot and backend
 
-The example's [GuildService](../examples/backends/bot/guild.service.ts) receives the Discord client through DI, looks up the guild and returns a plain object. [GuildRpcService](../examples/backends/bot/guild-rpc.service.ts) receives that service and adds the RPC boundary. The separation keeps Discord rules in the service and input/response validation in the handler.
+After installing a compatible framework build, run `pnpm example:bot`. The entry point creates the application, registers `AppModule` and starts it. The gateway opens only after the providers are ready. Set `RPC_SHARDING=true` to use the framework's native sharding; the parent opens one listener and routes each guild call to its owner.
 
-```typescript
-import { Inject, Injectable } from '@spraxium/common';
-import { RpcHandler } from '@spraxium/rpc';
-import { z } from 'zod';
-import type { BotRpcContract } from '../interfaces/bot-rpc-contract.interface';
-import { GuildService } from './guild.service';
+In another terminal, run `pnpm example:hono` and request `GET http://127.0.0.1:3000/guilds/<guildId>/stats`. Use a guild the bot has joined. The backend calls the RPC handler and returns its DTO. An invalid ID returns 400, an absent guild returns 404 and a failed bot call returns 503.
 
-@Injectable()
-export class GuildRpcService {
-  constructor(@Inject(GuildService) private readonly guilds: GuildService) {}
+Choose `pnpm example:nestjs`, `example:fastify`, `example:express`, `example:koa` or `example:node-http` to run another backend. They share the same method and response shape. Each uses port 3000 by default; set `PORT` to run more than one. Their implementations are described in the [backend guide](backends.md).
 
-  @RpcHandler('guild.stats', {
-    routing: 'guild',
-    permissions: ['guild:read'],
-    schema: z.object({ guildId: z.string() }).strict(),
-    responseSchema: z.object({
-      members: z.number().int().nonnegative(),
-      premium: z.boolean(),
-      shardId: z.number().int().nonnegative(),
-    }).strict(),
-  })
-  async stats(input: BotRpcContract['guild.stats']['input']): Promise<BotRpcContract['guild.stats']['output']> {
-    return this.guilds.getStats(input.guildId);
-  }
-}
-```
+## Call from a separate process
 
-Register this class in its module's `providers`. A method is callable only when it has `@RpcHandler` and the provider belongs to the loaded module graph. Duplicate names stop initialization. Handlers without permissions must explicitly declare `allowAuthenticated: true`; otherwise initialization fails. The default is never anonymous access.
+Create one client for the backend's lifetime and pass it into the classes that need it. For a short-lived task, close it in `finally`:
 
-`routing: 'guild'` requires a positive decimal snowflake string named `guildId` at the top level of the input. The framework routes it to the owning shard. A schema may normalize other fields but cannot change this identifier after routing. Use `routing: 'singleton'` for an operation that belongs to the configured singleton shard, such as reading global application status. Singleton routing does not merge results from other shards.
-
-## Call the bot
-
-Create one client per backend process and reuse it for requests. The client keeps its transport resources until shutdown. Creating one for every HTTP request adds connections and makes cleanup harder.
-
-```typescript
+```javascript
 import { createRpcClient } from '@spraxium/rpc-client';
-import type { BotRpcContract } from './bot-rpc-contract.interface';
 
-const rpc = createRpcClient<BotRpcContract>({
-  url: process.env.SPRAXIUM_RPC_URL ?? 'http://127.0.0.1:4300',
-  token: process.env.SPRAXIUM_RPC_TOKEN ?? '',
+const rpc = createRpcClient({
+  url: process.env.SPRAXIUM_RPC_URL,
+  token: process.env.SPRAXIUM_RPC_TOKEN,
 });
 
-const stats = await rpc.call('guild.stats', { guildId: '123456789012345678' }, { timeoutMs: 3000 });
-console.log(stats.members);
-rpc.close();
+try {
+  const stats = await rpc.call('guild.stats', { guildId: '123456789012345678' }, {
+    timeoutMs: 3000,
+  });
+  console.log(stats);
+} finally {
+  rpc.close();
+}
 ```
 
-This small script closes immediately after its call. An HTTP backend instead closes the client in its application shutdown hook, after HTTP requests drain. The [backend guide](backends.md) covers NestJS, Hono and Fastify with the source files used by the runnable examples.
+The [console examples](../examples/node-client/README.md) show ESM and CommonJS. In an HTTP server, close the client after accepted HTTP requests drain. Inspect `RpcClientError.code` to map expected failures; unexpected handler exceptions are redacted by the gateway.
 
-The SDK supports ESM imports and CommonJS `require()` on its supported Node versions. Both entry points load the same implementation and error class. No duplicate CJS build or separate metadata registry is created. Default NestJS CommonJS projects can use the published type declarations and compile their imports normally.
+## Deploy the integration
 
-## Run the prepared application
+The RPC credential authorizes a backend service. It does not prove that a dashboard user can access a guild. Check the user's session and guild permissions in the backend before calling a privileged method, and keep bot permission and role hierarchy checks in the bot's business service.
 
-Run `pnpm example:bot` from the RPC repository. It starts the packed bot against Discord with the values in `.env`. The bot must be a member of the guild you will query. In another terminal, choose `pnpm example:nest`, `pnpm example:hono` or `pnpm example:fastify`. Each backend listens on port 3000, so run one backend at a time.
+Use HTTPS for connections between hosts. The bot example reads PEM files from `SPRAXIUM_RPC_TLS_CERT` and `SPRAXIUM_RPC_TLS_KEY`; Node clients can trust a private CA through `NODE_EXTRA_CA_CERTS`. When a trusted edge terminates TLS, restrict the plaintext hop to that edge and configure it explicitly. Never pass the service token to frontend code.
 
-```bash
-curl http://127.0.0.1:3000/guilds/123456789012345678/stats
-```
+Calls have deadlines and accept an `AbortSignal`. Handlers must cooperate with cancellation. Cancellation does not reverse an operation already accepted by Discord. The SDK does not retry application calls automatically; use persistent application idempotency keys before retrying mutations whose result was lost.
 
-Replace the identifier with your test guild's ID. A successful response contains `members`, `premium` and `shardId`. A missing guild returns HTTP 404. An invalid identifier returns 400. Other RPC failures become 503 in these small read-only examples. Add your web authentication and verify the user's guild access before exposing them to dashboard users.
-
-The repository's automated tests do not need a Discord token. `pnpm check` runs local network tests and fresh package installations. `pnpm test:framework --framework ../framework` adds real framework processes and shard IPC while simulating the Discord gateway. The sibling `rpc-test/` project additionally demonstrates slash commands and NestJS using the same bot service.
-
-## Handle failures and cancellation
-
-Import `RpcClientError` and `Code` from the SDK to inspect protocol errors. `NotFound` means the bot could not find a method or a resource; `Unauthenticated` means the credential was rejected; `PermissionDenied` means the configured token lacks a required permission. The full mapping is in the [adapter reference](../packages/spraxium/README.md#errors).
-
-Supply an `AbortSignal` as the third call argument when downstream work should stop with its caller. Inside the handler, accept a second `RpcContext` argument and pass `context.signal` to operations that support cancellation. Shorter client deadlines take precedence over the configured server timeout. A handler that ignores its signal retains its concurrency slot until it finishes.
-
-The client does not retry failed calls automatically. If a timeout happens after Discord accepted a ban, retrying the request may repeat a side effect. Add an application idempotency key and durable result storage before retrying mutations. A random request ID and the shard replay history provide correlation and bounded IPC duplicate protection; they are not a durable idempotency store.
-
-## Deploy across machines
-
-Loopback plaintext is allowed for local development. A listener on another interface requires direct TLS or `tlsTerminationProxy: true` for a port isolated behind a trusted TLS edge. The client likewise requires HTTPS for remote hosts unless `allowInsecure: true` explicitly permits an isolated private hop. Both settings describe the actual network boundary; neither setting encrypts traffic on its own.
-
-For direct TLS, provide PEM `key` and `cert` values through `tls`. The listener supports HTTP/2 and HTTP/1.1 with TLS; the plaintext development listener is HTTP/2 only. Use the SDK defaults for HTTP/2 or `protocol: 'grpc'` for gRPC. Use `httpVersion: '1.1'` only with Connect behind an appropriate TLS endpoint or proxy. Trust private certificate authorities through Node's platform trust settings or `NODE_EXTRA_CA_CERTS`.
-
-Keep the Discord token on the bot host. Give each backend only the RPC permissions it uses. The backend must continue checking the authenticated user's guild access and staff privileges before invoking a handler. RPC credentials authorize the backend service, not the person using a dashboard.
+Run `pnpm test:examples` to verify all JavaScript integrations locally without logging into Discord, and `pnpm test:interop` to check the gRPC transport. See [HTTP migration](http-migration.md) to replace existing bridge operations one at a time.

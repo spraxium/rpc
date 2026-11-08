@@ -1,51 +1,50 @@
 # Spraxium RPC
 
-Call bot services from a separate backend over Connect or gRPC. Handlers use the same dependency injection instances as the bot's commands. In sharded bots, the parent routes each guild request to its owning shard.
+Call bot services from a separate Node.js backend over Connect or gRPC. Handlers use the bot's existing providers, and guild requests go to the owning shard.
 
-The implementation is in development. The public Spraxium framework does not yet expose all required lifecycle hooks, and the RPC packages have not been released to npm. Use a compatible local framework checkout for the bot adapter. The client and protocol run independently of the framework.
+The packages are in development and have not been published to npm. The bot adapter needs framework hooks that public Spraxium 0.3.2 does not provide. See [framework compatibility](docs/framework-compatibility.md) before starting the bot. The client and protocol work independently of the framework.
 
-## Workspace
+## Packages
 
-| Package | Directory | Responsibility |
-| --- | --- | --- |
-| `@spraxium/rpc-protocol` | `packages/protocol` | Transport descriptors and JSON contract |
-| `@spraxium/rpc-client` | `packages/client` | Typed Node.js client |
-| `@spraxium/rpc` | `packages/spraxium` | Handler discovery and native shard integration |
+| Package | Purpose |
+| --- | --- |
+| [`@spraxium/rpc-protocol`](packages/protocol/README.md) | Protobuf descriptors and JSON codec |
+| [`@spraxium/rpc-client`](packages/client/README.md) | Node.js client with ESM and CommonJS exports |
+| [`@spraxium/rpc`](packages/spraxium/README.md) | Spraxium plugin, handler discovery and shard routing |
 
-The runtime uses Node's HTTP/2, crypto and process APIs through the Connect transport. It does not start a separate HTTP framework or broker. The client installs neither Discord.js nor the Spraxium runtime. Zod, NestJS, Hono and Fastify belong to the examples.
+Only the bot adapter depends on Discord.js and Spraxium. The client uses ConnectRPC and the shared protocol. There is no separate HTTP framework, broker or database in the RPC runtime.
 
-## Try the examples
+## Examples
 
-Use Node.js `>=22.23.2 <27` and pnpm 12.14.0. The compatible framework checkout may require a newer patch version; Node 24.22.1 or 26.12.1 satisfies the local framework's requirements.
+Use Node.js `>=22.23.2 <27` and pnpm 12.14.0.
 
 ```bash
 pnpm install --frozen-lockfile
-pnpm example:prepare --framework ../framework
+pnpm build
 ```
 
-Copy `.env.example` to `.env` and fill in the Discord bot token and a random RPC token of 32–4096 characters. Generate the RPC token with `node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"`. Existing environment variables take precedence over this file.
+The [examples](examples/README.md) are JavaScript projects for Hono, NestJS, Fastify, Express, Koa, Node HTTP and standalone ESM/CommonJS clients. Each runs directly with Node. For example, with a compatible bot already running, set `SPRAXIUM_RPC_URL` and `SPRAXIUM_RPC_TOKEN` in the root `.env` and start Hono:
 
 ```bash
-pnpm example:bot
+pnpm example:hono
 ```
 
-In another terminal, run `pnpm example:nest`, `pnpm example:hono` or `pnpm example:fastify`. Each backend listens on port 3000, so choose one. Request `/guilds/<guildId>/stats` for a guild the bot has joined. The [example README](examples/backends/README.md) explains the processes, variables and cleanup.
+The endpoint is `GET http://127.0.0.1:3000/guilds/<guildId>/stats`. See the [tutorial](docs/getting-started.md) to configure the bot and register its `guild.stats` handler.
 
 ## Plugin registration
 
-Register the bot adapter like the framework's schedule plugin: import `RpcModule` in the application module and configure `defineRpc(...)` in the plugins array.
+Import `RpcModule` in your application module and add `defineRpc(...)` to the framework's plugins array.
 
-```typescript
+```javascript
 import { Module } from '@spraxium/common';
 import { RpcModule } from '@spraxium/rpc';
 
-@Module({ imports: [RpcModule] })
 export class AppModule {}
+
+Module({ imports: [RpcModule] })(AppModule);
 ```
 
-The module registers its providers through native DI and discovers `@RpcHandler` methods in feature modules. Configuration uses the same `definePlugin` and `ConfigStore` mechanism as `defineSchedule`.
-
-```typescript
+```javascript
 import { defineConfig } from '@spraxium/core';
 import { defineRpc } from '@spraxium/rpc';
 
@@ -57,24 +56,20 @@ export default defineConfig({
 });
 ```
 
-This listens on `127.0.0.1:4300` after the bot's providers are ready. Missing or invalid credentials stop startup. Handlers declare their own permissions and optional synchronous input/response schemas. The [integration tutorial](docs/getting-started.md) walks through a handler, the shared contract and the backend client.
+The default address is `127.0.0.1:4300`. Startup rejects missing or invalid credentials. Handlers declare their own permissions and can validate input and output with synchronous schemas.
 
 ## Development
 
 ```bash
 pnpm check
-pnpm test:framework --framework ../framework
-pnpm test:java
+pnpm test:examples
+pnpm test:interop
 ```
 
-`check` verifies formatting, types, builds, protocol compatibility, unit/network tests and fresh ESM/CommonJS client installations. Framework tests install packed archives and exercise separate bot/client processes and native shard IPC. Java tests require JDK 17+ and Maven 3.9+.
+`check` covers formatting, types, builds, protocol compatibility, unit/network tests and installation of packed client packages. The example suite runs six HTTP backends, ESM/CommonJS clients and the bot's JavaScript provider registration without logging into Discord. The interoperability suite exercises gRPC against the real gateway.
 
-## Contributing
-
-Read the [integration tutorial](docs/getting-started.md), [backend guide](docs/backends.md), [HTTP migration](docs/http-migration.md), [compatibility requirements](docs/framework-compatibility.md) and [maintenance guide in Portuguese](docs/maintenance.pt-BR.md).
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, commit rules and implementation checks. Community participation follows the [Code of Conduct](CODE_OF_CONDUCT.md). Security reports follow the [Security Policy](SECURITY.md).
+Read [CONTRIBUTING.md](CONTRIBUTING.md) for commit rules and checks, the [backend guide](docs/backends.md) for integrations, and the [HTTP migration guide](docs/http-migration.md) when replacing `@spraxium/http`.
 
 ## License
 
-[Apache-2.0](LICENSE).
+[Apache-2.0](LICENSE). See the [Code of Conduct](CODE_OF_CONDUCT.md) and [Security Policy](SECURITY.md).

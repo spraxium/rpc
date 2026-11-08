@@ -1,62 +1,39 @@
-# NestJS, Hono and Fastify
+# HTTP backends
 
-All three backends use `@spraxium/rpc-client` and a types-only application contract. None needs the Discord token, Discord.js or a Spraxium application instance. Each creates a client once, calls it from route handlers and closes it after the HTTP server drains. The [integration tutorial](getting-started.md) covers the bot setup and the current framework compatibility requirement.
-
-Prepare the examples with `pnpm example:prepare --framework ../framework`, fill the root `.env` and start `pnpm example:bot`. Each of the commands below starts a separate example on port 3000. Use one backend at a time, or change its listening port in its entry point.
+The six HTTP examples create one RPC client for the application. They do not need the Discord token, Discord.js or a Spraxium runtime. Routes call `guild.stats` on a running bot and return its plain JSON result. The [examples guide](../examples/README.md) covers environment setup and start commands.
 
 ## NestJS
 
-Run `pnpm example:nest`. [DashboardModule](../examples/backends/nest/dashboard.module.ts) registers a factory provider under `BOT_RPC_CLIENT`. The factory reads the RPC URL and token and calls `createRpcClient<BotRpcContract>`. This is the composition point for transport settings; feature services should receive this client through injection rather than create their own.
+Run `pnpm example:nestjs`. [DashboardModule](../examples/nestjs/src/dashboard.module.js) creates the client through a factory provider named `BOT_RPC_CLIENT`. [BotRpcService](../examples/nestjs/src/bot-rpc.service.js) receives it through injection, calls the bot and translates RPC failures into Nest exceptions. [GuildController](../examples/nestjs/src/guild.controller.js) handles the HTTP route and delegates to that service.
 
-[BotRpcService](../examples/backends/nest/bot-rpc.service.ts) injects the client and calls `guild.stats`. [GuildController](../examples/backends/nest/guild.controller.ts) extracts the guild ID from `/guilds/:guildId/stats` and delegates to the service. Adding a second HTTP route should follow that separation: HTTP parameters and response handling belong in the controller, while calls and application decisions belong in the service.
+The example uses the public Nest decorator functions directly so it can run as JavaScript without a compiler. `Inject`, `Controller`, `Get` and `Param` register the same metadata used by their decorator syntax. The entry point enables shutdown hooks, and the service closes the RPC connection in `onApplicationShutdown`.
 
-```typescript
-import { Inject, Injectable } from '@nestjs/common';
-import type { OnApplicationShutdown } from '@nestjs/common';
-import type { RpcClient } from '@spraxium/rpc-client';
-import type { BotRpcContract } from '../interfaces/bot-rpc-contract.interface';
-import { BOT_RPC_CLIENT } from './rpc-client.constant';
-
-@Injectable()
-export class BotRpcService implements OnApplicationShutdown {
-  constructor(@Inject(BOT_RPC_CLIENT) private readonly rpc: RpcClient<BotRpcContract>) {}
-
-  stats(guildId: string) {
-    return this.rpc.call('guild.stats', { guildId });
-  }
-
-  onApplicationShutdown(): void {
-    this.rpc.close();
-  }
-}
-```
-
-The runnable service additionally maps `NotFound` to `NotFoundException`, `InvalidArgument` to `BadRequestException`, and other failures to `ServiceUnavailableException`. Keep this mapping in an HTTP-facing layer so domain code does not depend on Nest exceptions. Add a web authentication guard and a guild-access guard before the controller can invoke privileged bot operations.
-
-The entry point enables Nest shutdown hooks. Nest closes its HTTP server before `onApplicationShutdown`, so accepted requests can finish while the RPC client remains usable. The SDK's CommonJS export supports default Nest builds; the demo itself builds as ESM. Node must meet the client's engine range in either case.
+Add authentication and guild-access guards before exposing privileged operations. Keep the service credential in the application provider; do not accept it from a browser request.
 
 ## Hono
 
-Run `pnpm example:hono`. Its [entry point](../examples/backends/hono/main.ts) creates the RPC client and passes it to [HonoDashboard](../examples/backends/hono/dashboard.application.ts). The application class owns route registration, error mapping and the Node HTTP server returned by `@hono/node-server`.
-
-The `stats` method reads `guildId` from Hono's request context, calls `guild.stats` and serializes the DTO through `context.json`. Its error handler maps the same protocol statuses as the Nest example. Middleware for sessions and guild access belongs before this route. Keep the service token in process configuration, not in a request header received from dashboard users.
-
-On SIGTERM or SIGINT, the entry point calls `dashboard.close()`. Closing stops the HTTP listener, waits for responses and releases the RPC client in `finally`. The close method returns the same shutdown promise on repeated calls. If you add background tasks, stop accepting new work before waiting for these resources to close.
+Run `pnpm example:hono`. Its [entry point](../examples/hono/src/main.js) passes the client to [HonoDashboard](../examples/hono/src/dashboard.application.js). The class registers the route and error handler, starts the Node server and owns shutdown. Its close method reuses the same promise when called more than once and releases the RPC client after the HTTP listener drains.
 
 ## Fastify
 
-Run `pnpm example:fastify`. The [entry point](../examples/backends/fastify/main.ts) creates a Fastify instance and an RPC client, then passes both to [FastifyDashboard](../examples/backends/fastify/dashboard.application.ts). The route's parameter type is declared separately in `interfaces/guild-stats-params.interface.ts`.
+Run `pnpm example:fastify`. [FastifyDashboard](../examples/fastify/src/dashboard.application.js) receives the Fastify application and RPC client. It registers the statistics route, error handler and `onClose` hook before listening. The close hook releases the client after accepted HTTP requests finish. Add application authentication through Fastify hooks or plugins.
 
-`FastifyDashboard.start()` registers the statistics route, error handler and shutdown hooks before listening. Route callbacks delegate to named methods. The application closes the RPC client through Fastify's `onClose` hook, after HTTP requests drain. If startup fails, it closes the partially initialized application before propagating the failure.
+## Express
 
-Use Fastify hooks or plugins for authentication and guild authorization. Keep the RPC client shared across those routes. If the backend has multiple plugins, inject or decorate the same application-owned client rather than creating another connection pool in each plugin.
+Run `pnpm example:express`. [ExpressDashboard](../examples/express/src/dashboard.application.js) registers an Express 5 route and owns its Node HTTP listener. The route maps failures to HTTP responses. Shutdown closes the listener before releasing the RPC client. Place authentication and guild-access middleware before the statistics route.
 
-## Status and request lifetime
+## Koa
 
-The examples are read-only and use a small error mapping. A production API may need separate handling for authentication failures, permission failures, quotas and deadlines. Inspect `RpcClientError.code` and return messages appropriate for the HTTP caller; do not copy internal exceptions into HTTP responses.
+Run `pnpm example:koa`. [KoaDashboard](../examples/koa/src/dashboard.application.js) handles the statistics path in one middleware method without a separate router. It maps RPC errors and owns both the HTTP server and client. Add session and authorization middleware before the route middleware.
 
-Call options accept `timeoutMs` and `signal`. A signal from your HTTP framework can cancel downstream work when a request ends. Check that the signal represents client disconnection, rather than successful completion of a request body. The handler must cooperate with cancellation, and a canceled HTTP request does not prove that a Discord mutation was undone.
+## Native Node HTTP
 
-For readiness, expose a small application handler such as `system.health` with `routing: 'singleton'` and a read permission. Return only the dependencies your backend needs to judge ready. This is an application method; the package does not implement the standard gRPC Health service or an HTTP health route. Keep probes lightweight and give them a short deadline and an appropriate credential rate limit.
+Run `pnpm example:node-http`. [NodeHttpDashboard](../examples/node-http/src/dashboard.application.js) uses `node:http`, parses the path and writes JSON responses. It forwards premature response closure through an `AbortSignal` and removes that listener after the call. This example adds no web framework dependency.
 
-The lifecycle behavior follows the official [NestJS lifecycle](https://docs.nestjs.com/fundamentals/lifecycle-events), [Hono Node server](https://hono.dev/docs/getting-started/nodejs) and [Fastify onClose hook](https://fastify.dev/docs/latest/Reference/Hooks/#onclose).
+## Errors and request lifetime
+
+The examples map `NotFound` to 404, `InvalidArgument` to 400 and other RPC failures to 503. A deployed API may need separate responses for service credentials, permissions, quotas and deadlines. Inspect `RpcClientError.code` and choose an appropriate public response without copying internal exceptions.
+
+The SDK accepts `timeoutMs` and `signal` for each call. Pass a disconnection signal when the HTTP framework provides one, and make downstream handlers observe it. Cancellation does not undo a Discord mutation that already completed. Mutations that can be retried need application-owned idempotency keys.
+
+For readiness, add a small authorized application handler if the backend needs to check the bot. The package does not implement a standard gRPC Health service. Keep checks short and account for their requests in credential rate limits.

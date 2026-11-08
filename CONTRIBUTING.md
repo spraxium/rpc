@@ -44,6 +44,10 @@ Installation sets up Husky. The pre-commit hook checks staged files with Biome; 
 
 Keep one class per production file and dependencies explicit in constructors. Interfaces and types belong in their own files. Use `Array<T>` and `ReadonlyArray<T>`; prefer `unknown` to `any`.
 
+Keep source files free of comments, including JSDoc. Explain API usage, resource ownership and design decisions in the relevant documentation. Generated bindings follow the same rule through the reproducible generation step. Do not add a runtime dependency for behavior already covered by Node or the framework.
+
+The [maintenance guide](docs/maintenance.pt-BR.md) explains the execution flow and resource ownership. The [code structure guide](docs/maintaining-the-code.md) maps responsibilities to classes.
+
 The client must remain independent of Discord.js and the framework runtime. Keep `proto/` as the canonical schema and regenerate bindings with `pnpm proto:generate`. Preserve public imports and wire compatibility. Run packaging and tests that consume those builds sequentially, since prepack can rebuild dependencies.
 
 ## Commit Convention
@@ -92,7 +96,7 @@ pnpm commitlint --last --verbose
 - Update documentation when public behavior changes.
 - Review API and protocol compatibility before proposing a breaking change.
 
-For large changes, open an issue first to discuss the approach. Changesets and publishing are handled separately by maintainers.
+For large changes, open an issue first to discuss the approach. Publishing is handled separately by maintainers. The adapter release remains blocked until a compatible framework reference and peer versions are recorded; see [releases](docs/releases.md).
 
 ## Reporting Issues
 

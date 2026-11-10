@@ -2,6 +2,8 @@
 
 ## 0.1.0 — unreleased
 
+Update Zod, Hono and its Node adapter, Vitest, and vulnerable backend dependencies. Add regression tests for constrained collection validation, CSRF checks and mounted route protection.
+
 The bot adapter registers handlers through Spraxium's module lifecycle and uses existing DI providers. A parent gateway routes guild calls to their owning shard. Calls enforce credentials, handler permissions, deadlines, payload limits and concurrency limits, and drain during shutdown.
 
 The Node client supports ESM and CommonJS with the same implementation and error class. It creates resources for the selected Connect or gRPC transport and closes them explicitly. The shared protocol validates JSON values and preserves the v1 Protobuf contract.

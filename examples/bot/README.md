@@ -2,6 +2,8 @@
 
 Exposes `guild.stats` through an injected guild service. The provider requires `guild:read`, validates input and output with Zod, and returns `{ members, premium, shardId }`.
 
+The example requires Zod 4.6.6 or newer in the 4.x line. Schemas for collections should set an explicit size limit so oversized input is rejected before validating its elements.
+
 Follow the [setup guide](../README.md), install a [compatible framework build](../../docs/framework-compatibility.md), set `DISCORD_TOKEN` and `SPRAXIUM_RPC_TOKEN` in the root `.env`, then run `pnpm example:bot` from the repository root. The public framework does not yet have all required hooks.
 
 [src/main.js](src/main.js) creates the application. [AppModule](src/app.module.js) imports `RpcModule` and the guild feature module. [GuildService](src/guild.service.js) owns Discord lookups; [GuildRpcService](src/guild-rpc.service.js) owns RPC registration and schemas. The JavaScript files call decorator functions and declare constructor metadata explicitly.

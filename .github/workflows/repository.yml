@@ -31,6 +31,7 @@ jobs:
       - name: Lint
         run: pnpm lint
       - name: Validate commit messages
+        shell: bash
         env:
           EVENT_NAME: ${{ github.event_name }}
           BEFORE_SHA: ${{ github.event.before }}
@@ -39,10 +40,21 @@ jobs:
         run: |
           if [ "$EVENT_NAME" = "pull_request" ]; then
             pnpm exec commitlint --from "$BASE_SHA" --to "$HEAD_SHA" --verbose
-          elif [ -n "$BEFORE_SHA" ] && [ "$BEFORE_SHA" != "0000000000000000000000000000000000000000" ]; then
+          elif [ -n "$BEFORE_SHA" ] && git cat-file -e "$BEFORE_SHA^{commit}" 2>/dev/null; then
             pnpm exec commitlint --from "$BEFORE_SHA" --to "$HEAD_SHA" --verbose
           else
-            git rev-list --reverse "$HEAD_SHA" | while read -r commit; do
+            # A rewritten branch can lose its former tip from the checkout.
+            commits="$(node --input-type=module -e '
+              import { readFileSync } from "node:fs";
+              const event = JSON.parse(readFileSync(process.env.GITHUB_EVENT_PATH, "utf8"));
+              const ids = (event.commits ?? []).map(({ id }) => id);
+              console.log([...new Set(ids.length ? ids : [process.env.HEAD_SHA])].join("\n"));
+            ')"
+            while IFS= read -r commit; do
+              if [[ ! "$commit" =~ ^[0-9a-f]{40}$ ]] || ! git merge-base --is-ancestor "$commit" "$HEAD_SHA"; then
+                echo 'Push event contains a commit that is missing from the checked-out history.' >&2
+                exit 1
+              fi
               git show -s --format=%B "$commit" | pnpm exec commitlint --verbose
-            done
+            done <<< "$commits"
           fi

@@ -1,6 +1,6 @@
 {
   "repository": "spraxium/spraxium",
-  "ref": "a52c5c6b281e5a2ef6d6acff0414ea6ae55e30ba",
+  "ref": "7f74be8cedb7d095b3ecfe3c46f81c16cc5350ad",
   "version": "0.10.0",
   "peers": {
     "@spraxium/common": "^0.10.0",

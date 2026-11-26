@@ -7,6 +7,14 @@ on:
         description: Version to publish
         required: true
         type: string
+      publication:
+        description: Prepare archives, stage for review, or publish with an authorized trusted publisher
+        type: choice
+        default: prepare
+        options:
+          - prepare
+          - stage
+          - publish
 
 permissions:
   contents: read
@@ -52,14 +60,36 @@ jobs:
           pnpm test:examples
           pnpm test:interop
 
-      - name: Pack and test with the published framework
+      - name: Pack and verify release files
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: |
+          archives="$RUNNER_TEMP/rpc-packages"
+          mkdir -p "$archives"
+          pnpm --filter './packages/*' -r pack --pack-destination "$archives"
+          for package in rpc-protocol rpc-client rpc; do
+            archive="$archives/spraxium-$package-$RELEASE_VERSION.tgz"
+            tar -xOf "$archive" package/package.json | jq -e \
+              --arg name "@spraxium/$package" --arg version "$RELEASE_VERSION" \
+              '.name == $name and .version == $version' >/dev/null
+            tar -xOf "$archive" package/README.md >/dev/null
+          done
+
+      - name: Upload release files
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: spraxium-rpc-${{ inputs.version }}
+          path: ${{ runner.temp }}/rpc-packages/*.tgz
+          if-no-files-found: error
+
+      - name: Test with the published framework
+        if: inputs.publication != 'prepare'
         env:
           RELEASE_VERSION: ${{ inputs.version }}
         run: |
           archives="$RUNNER_TEMP/rpc-packages"
           consumer="$RUNNER_TEMP/rpc-consumer"
-          mkdir -p "$archives" "$consumer"
-          pnpm --filter './packages/*' -r pack --pack-destination "$archives"
+          mkdir -p "$consumer"
           framework="$(jq -er '.version' compatibility/framework.json)"
           echo '{"private":true,"type":"module"}' > "$consumer/package.json"
           npm install --prefix "$consumer" --ignore-scripts --no-audit \
@@ -71,17 +101,27 @@ jobs:
           cp packages/spraxium/test/fixtures/bot.mjs "$consumer/bot.mjs"
           RPC_FRAMEWORK_FIXTURE="$consumer/bot.mjs" pnpm test:framework
 
-      - name: Publish in dependency order
+      - name: Submit to npm in dependency order
+        if: inputs.publication != 'prepare'
         env:
           RELEASE_VERSION: ${{ inputs.version }}
+          PUBLICATION: ${{ inputs.publication }}
+          PUBLIC_REPOSITORY: ${{ !github.event.repository.private }}
+          NODE_AUTH_TOKEN: ${{ inputs.publication == 'stage' && secrets.NPM_STAGE_TOKEN || '' }}
         run: |
+          if [[ "$PUBLICATION" == stage && -z "$NODE_AUTH_TOKEN" ]]; then
+            echo 'Set NPM_STAGE_TOKEN to an npm token authorized to stage packages in this scope.' >&2
+            exit 1
+          fi
           for package in rpc-protocol rpc-client rpc; do
             archive="$RUNNER_TEMP/rpc-packages/spraxium-$package-$RELEASE_VERSION.tgz"
             published="$(npm view "@spraxium/$package@$RELEASE_VERSION" dist.integrity --prefer-online 2>/dev/null || true)"
             if [[ -n "$published" ]]; then
               actual="sha512-$(openssl dgst -sha512 -binary "$archive" | openssl base64 -A)"
               test "$published" = "$actual"
+            elif [[ "$PUBLICATION" == stage ]]; then
+              npm stage publish "$archive" --tag latest --access public --provenance="$PUBLIC_REPOSITORY"
             else
-              npm publish "$archive" --tag latest --access public --provenance
+              npm publish "$archive" --tag latest --access public --provenance="$PUBLIC_REPOSITORY"
             fi
           done

@@ -8,9 +8,9 @@ on:
         required: true
         type: string
       publication:
-        description: Prepare archives, stage for review, or publish with an authorized trusted publisher
+        description: Prepare archives, stage for review, or publish directly
         type: choice
-        default: prepare
+        default: stage
         options:
           - prepare
           - stage
@@ -28,28 +28,41 @@ jobs:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 25
+
     permissions:
       contents: read
       id-token: write
+
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+
       - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: "24"
           package-manager-cache: false
           registry-url: https://registry.npmjs.org
 
+      - name: Update npm CLI
+        run: |
+          npm install --global npm@11
+          npm --version
+
       - name: Validate version and framework record
         env:
           RELEASE_VERSION: ${{ inputs.version }}
         run: |
           [[ "$RELEASE_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+
           node scripts/verify-framework.mjs
+
           for package in protocol client spraxium; do
-            jq -e --arg version "$RELEASE_VERSION" '.version == $version' "packages/$package/package.json"
+            jq -e --arg version "$RELEASE_VERSION" \
+              '.version == $version' \
+              "packages/$package/package.json"
           done
 
       - name: Install and test
@@ -65,13 +78,20 @@ jobs:
           RELEASE_VERSION: ${{ inputs.version }}
         run: |
           archives="$RUNNER_TEMP/rpc-packages"
+
           mkdir -p "$archives"
-          pnpm --filter './packages/*' -r pack --pack-destination "$archives"
+
+          pnpm --filter './packages/*' -r pack \
+            --pack-destination "$archives"
+
           for package in rpc-protocol rpc-client rpc; do
             archive="$archives/spraxium-$package-$RELEASE_VERSION.tgz"
+
             tar -xOf "$archive" package/package.json | jq -e \
-              --arg name "@spraxium/$package" --arg version "$RELEASE_VERSION" \
+              --arg name "@spraxium/$package" \
+              --arg version "$RELEASE_VERSION" \
               '.name == $name and .version == $version' >/dev/null
+
             tar -xOf "$archive" package/README.md >/dev/null
           done
 
@@ -89,16 +109,24 @@ jobs:
         run: |
           archives="$RUNNER_TEMP/rpc-packages"
           consumer="$RUNNER_TEMP/rpc-consumer"
+
           mkdir -p "$consumer"
+
           framework="$(jq -er '.version' compatibility/framework.json)"
+
           echo '{"private":true,"type":"module"}' > "$consumer/package.json"
+
           npm install --prefix "$consumer" --ignore-scripts --no-audit \
-            "@spraxium/common@$framework" "@spraxium/core@$framework" \
-            "@spraxium/logger@$framework" "@spraxium/env@$framework" \
+            "@spraxium/common@$framework" \
+            "@spraxium/core@$framework" \
+            "@spraxium/logger@$framework" \
+            "@spraxium/env@$framework" \
             "$archives/spraxium-rpc-protocol-$RELEASE_VERSION.tgz" \
             "$archives/spraxium-rpc-client-$RELEASE_VERSION.tgz" \
             "$archives/spraxium-rpc-$RELEASE_VERSION.tgz"
+
           cp packages/spraxium/test/fixtures/bot.mjs "$consumer/bot.mjs"
+
           RPC_FRAMEWORK_FIXTURE="$consumer/bot.mjs" pnpm test:framework
 
       - name: Submit to npm in dependency order
@@ -107,21 +135,33 @@ jobs:
           RELEASE_VERSION: ${{ inputs.version }}
           PUBLICATION: ${{ inputs.publication }}
           PUBLIC_REPOSITORY: ${{ !github.event.repository.private }}
-          NODE_AUTH_TOKEN: ${{ inputs.publication == 'stage' && secrets.NPM_STAGE_TOKEN || '' }}
         run: |
-          if [[ "$PUBLICATION" == stage && -z "$NODE_AUTH_TOKEN" ]]; then
-            echo 'Set NPM_STAGE_TOKEN to an npm token authorized to stage packages in this scope.' >&2
-            exit 1
-          fi
           for package in rpc-protocol rpc-client rpc; do
             archive="$RUNNER_TEMP/rpc-packages/spraxium-$package-$RELEASE_VERSION.tgz"
-            published="$(npm view "@spraxium/$package@$RELEASE_VERSION" dist.integrity --prefer-online 2>/dev/null || true)"
+
+            published="$(npm view "@spraxium/$package@$RELEASE_VERSION" \
+              dist.integrity --prefer-online 2>/dev/null || true)"
+
             if [[ -n "$published" ]]; then
               actual="sha512-$(openssl dgst -sha512 -binary "$archive" | openssl base64 -A)"
-              test "$published" = "$actual"
+
+              if [[ "$published" != "$actual" ]]; then
+                echo "::error::Integrity mismatch for @spraxium/$package@$RELEASE_VERSION"
+                exit 1
+              fi
+
+              echo "@spraxium/$package@$RELEASE_VERSION is already published."
+
             elif [[ "$PUBLICATION" == stage ]]; then
-              npm stage publish "$archive" --tag latest --access public --provenance="$PUBLIC_REPOSITORY"
+              npm stage publish "$archive" \
+                --tag latest \
+                --access public \
+                --provenance="$PUBLIC_REPOSITORY"
+
             else
-              npm publish "$archive" --tag latest --access public --provenance="$PUBLIC_REPOSITORY"
+              npm publish "$archive" \
+                --tag latest \
+                --access public \
+                --provenance="$PUBLIC_REPOSITORY"
             fi
           done

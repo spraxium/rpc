@@ -1,11 +1,11 @@
 import { randomUUID } from 'node:crypto';
 import { once } from 'node:events';
 import {
+  createSecureServer,
+  createServer,
   type Http2SecureServer,
   type Http2Server,
   type ServerHttp2Session,
-  createSecureServer,
-  createServer,
 } from 'node:http2';
 import type { Socket } from 'node:net';
 import { Code, ConnectError, type ConnectRouter, type HandlerContext } from '@connectrpc/connect';

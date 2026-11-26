@@ -12,4 +12,5 @@ const metadata = {
 
 @Global()
 @Module(metadata)
+/** Installs RPC handler discovery and lifecycle hooks in a Spraxium application. */
 export class RpcModule {}

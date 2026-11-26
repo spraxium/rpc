@@ -4,13 +4,20 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "start": "node --env-file-if-exists=../../.env src/main.js"
+    "build": "tsc -p tsconfig.json",
+    "start": "node --env-file-if-exists=../../.env dist/main.js",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
+    "@koa/router": "15.7.1",
     "koa": "3.3.0",
-    "@spraxium/rpc-client": "workspace:*"
+    "@spraxium/rpc-client": "workspace:*",
+    "@spraxium/rpc-example-shared": "workspace:*"
   },
   "engines": {
     "node": ">=22.23.2 <27"
+  },
+  "devDependencies": {
+    "@types/koa": "3.0.3"
   }
 }

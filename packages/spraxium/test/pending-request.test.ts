@@ -48,6 +48,8 @@ describe('pending shard requests', () => {
     );
     const completion = request.start();
     expect(request.start()).toBe(completion);
+    request.finish({ rpc: RPC_IPC, kind: 'result', id: 'completed', payload: 'null' });
+    expect(finish).not.toHaveBeenCalled();
     const response: RpcIpcMessage = { rpc: RPC_IPC, kind: 'manifest', id: 'completed', handlers: [] };
     request.finish(response);
     await expect(completion).resolves.toEqual(response);

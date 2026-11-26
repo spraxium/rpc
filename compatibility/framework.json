@@ -1,6 +1,10 @@
 {
   "repository": "spraxium/spraxium",
-  "ref": null,
-  "peers": null,
-  "status": "The public framework does not yet contain module integrations and awaited parent shutdown."
+  "ref": "a52c5c6b281e5a2ef6d6acff0414ea6ae55e30ba",
+  "version": "0.10.0",
+  "peers": {
+    "@spraxium/common": "^0.10.0",
+    "@spraxium/core": "^0.10.0",
+    "@spraxium/logger": "^0.10.0"
+  }
 }

@@ -76,7 +76,7 @@ describe('independent HTTP backends', () => {
 });
 
 describe('standalone clients', () => {
-  it.each(['src/main.js', 'commonjs.cjs'])('runs the Node entry point %s', async (entry) => {
+  it.each(['dist/main.js', 'dist/commonjs.cjs'])('runs the Node entry point %s', async (entry) => {
     const result = await execute(process.execPath, [entry, '4194304'], {
       cwd: applications['node-client'],
       env: { ...process.env, SPRAXIUM_RPC_URL: plain.address, SPRAXIUM_RPC_TOKEN: token },

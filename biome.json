@@ -1,12 +1,16 @@
 {
-  "$schema": "https://biomejs.dev/schemas/1.9.0/schema.json",
-  "organizeImports": {
-    "enabled": true
+  "$schema": "https://biomejs.dev/schemas/2.6.9/schema.json",
+  "assist": {
+    "actions": {
+      "source": {
+        "organizeImports": "on"
+      }
+    }
   },
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": true,
+      "preset": "recommended",
       "suspicious": {
         "noExplicitAny": "warn"
       },
@@ -36,27 +40,28 @@
     }
   },
   "files": {
-    "ignore": [
-      "**/dist/**",
-      "**/node_modules/**",
-      "**/.spraxium/**",
-      "**/local/**",
-      "tests/database-templates/.generated/**",
-      "tests/database-templates/results.json",
-      "**/*.d.ts",
-      "_old/**",
-      "web/.next/**",
-      "templates/**",
-      "apps/sandbox/*",
-      "vscode-extension/**",
-      "**/.local/**",
-      "**/target/**",
-      "packages/protocol/proto/**"
+    "includes": [
+      "**",
+      "!**/dist",
+      "!**/node_modules",
+      "!**/.spraxium",
+      "!**/local",
+      "!**/tests/database-templates/.generated",
+      "!**/tests/database-templates/results.json",
+      "!**/*.d.ts",
+      "!**/_old",
+      "!**/web/.next",
+      "!**/templates",
+      "!**/apps/sandbox/**/*",
+      "!**/vscode-extension",
+      "!**/.local",
+      "!**/target",
+      "!**/packages/protocol/proto"
     ]
   },
   "overrides": [
     {
-      "include": ["apps/**/*.ts"],
+      "includes": ["**/apps/**/*.ts"],
       "linter": {
         "rules": {
           "style": {
@@ -65,5 +70,25 @@
         }
       }
     }
-  ]
+  ],
+  "markdown": {
+    "formatter": {
+      "enabled": false
+    }
+  },
+  "yaml": {
+    "formatter": {
+      "enabled": false
+    }
+  },
+  "json": {
+    "formatter": {
+      "expand": "auto"
+    }
+  },
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  }
 }

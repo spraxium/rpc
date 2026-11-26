@@ -1,0 +1,24 @@
+name: Bug report
+description: Report behavior that differs from the documentation or used to work.
+title: "[Bug] "
+body:
+  - type: input
+    id: versions
+    attributes:
+      label: Versions and runtime
+      description: Include the RPC package, Spraxium, Discord.js, Node.js and your OS.
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: What happened and what did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Smallest example that reproduces the bug
+      description: Include direct or sharded mode, transport and relevant logs with secrets removed.
+    validations:
+      required: true

@@ -1,5 +1,5 @@
 import { Injectable } from '@spraxium/common';
-import { ConfigStore, ParentHookRegistry, isShardChild } from '@spraxium/core';
+import { ConfigStore, isShardChild, ParentHookRegistry } from '@spraxium/core';
 import type { ShardingManager } from 'discord.js';
 import { defineRpc } from '../configuration/rpc.config';
 import type { RpcFrameworkHost } from './interfaces/rpc-framework-host.interface';
@@ -29,7 +29,7 @@ export class SpraxiumRpcHost implements RpcFrameworkHost {
   private shutdownRegistrar(): (hook: () => Promise<void>) => unknown {
     if (!('onShutdown' in ParentHookRegistry) || typeof ParentHookRegistry.onShutdown !== 'function') {
       throw new Error(
-        'Spraxium RPC requires a framework release with module integrations, onApplicationReady and parent shutdown hooks. See docs/framework-compatibility.md in the RPC repository.',
+        'Spraxium RPC requires compatible framework packages starting at 0.10.0. See https://spraxium.com/en/guide/rpc-quickstart.',
       );
     }
     return ParentHookRegistry.onShutdown.bind(ParentHookRegistry);

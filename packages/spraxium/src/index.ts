@@ -1,10 +1,10 @@
 export { Code } from '@connectrpc/connect';
+export type { RpcMethodContract } from '@spraxium/rpc-protocol';
+export type { RpcConfig } from './configuration/interfaces/rpc-config.interface';
 export { defineRpc } from './configuration/rpc.config';
 export { RpcError } from './execution/rpc.error';
-export { RpcHandler } from './handlers/rpc-handler.decorator';
-export { RpcModule } from './rpc.module';
-export type { RpcConfig } from './configuration/interfaces/rpc-config.interface';
-export type { RpcContext } from './interfaces/rpc-context.interface';
 export type { RpcHandlerOptions } from './handlers/interfaces/rpc-handler-options.interface';
+export { RpcHandler } from './handlers/rpc-handler.decorator';
+export type { RpcContext } from './interfaces/rpc-context.interface';
 export type { RpcIdentity } from './interfaces/rpc-identity.interface';
-export type { RpcMethodContract } from '@spraxium/rpc-protocol';
+export { RpcModule } from './rpc.module';

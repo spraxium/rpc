@@ -1,7 +1,7 @@
 import { ConfigStore, ParentHookRegistry } from '@spraxium/core';
 import { describe, expect, it, vi } from 'vitest';
-import { RpcConfigResolver } from '../src/configuration/rpc-config.resolver';
 import { defineRpc } from '../src/configuration/rpc.config';
+import { RpcConfigResolver } from '../src/configuration/rpc-config.resolver';
 import { RpcRegistry } from '../src/handlers/rpc-handler.registry';
 import { RpcLifecycle } from '../src/integration/rpc.lifecycle';
 import { SpraxiumRpcHost } from '../src/integration/spraxium-rpc.host';
@@ -33,7 +33,7 @@ describe('secure configuration', () => {
 
   it('rejects a framework without the required integration capabilities', () => {
     if (!('onShutdown' in ParentHookRegistry)) {
-      expect(() => new SpraxiumRpcHost().assertCompatible()).toThrow('requires a framework release');
+      expect(() => new SpraxiumRpcHost().assertCompatible()).toThrow('framework packages starting at 0.10.0');
     }
   });
 

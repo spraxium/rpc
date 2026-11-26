@@ -1,30 +1,11 @@
-## Summary
+## Change
 
-## Type of Change
+<!-- What changed and why? Link the issue if one exists. -->
 
-- [ ] Bug fix
-- [ ] New feature
-- [ ] Breaking change
-- [ ] Performance improvement
-- [ ] Refactor
-- [ ] Documentation
-- [ ] Tests
-- [ ] Build / CI / tooling
+## Checks
 
-## Related Issue
+<!-- List the commands you ran and their results. -->
 
-## Changes
+## Compatibility
 
-## Testing
-
-- [ ] `pnpm lint`
-- [ ] `pnpm typecheck`
-- [ ] `pnpm test`
-- [ ] Framework compatibility checked when adapter behavior changes
-- [ ] gRPC interoperability checked when transport behavior changes
-
-## Checklist
-
-- [ ] Commits follow the emoji, type and scope convention
-- [ ] Public API and protocol compatibility reviewed
-- [ ] Documentation updated where needed
+<!-- Mention API, protocol, configuration, or security changes that affect users. -->

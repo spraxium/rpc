@@ -1,7 +1,9 @@
 {
   "name": "@spraxium/rpc-client",
-  "version": "0.1.0",
+  "version": "0.10.0",
   "description": "Independent typed Node.js client for Spraxium RPC",
+  "homepage": "https://spraxium.com/en/guide/rpc-overview",
+  "bugs": { "url": "https://github.com/spraxium/rpc/issues" },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/spraxium/rpc.git",

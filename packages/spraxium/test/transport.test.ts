@@ -1,5 +1,5 @@
 import { Code, ConnectError, createClient } from '@connectrpc/connect';
-import { Http2SessionManager, createConnectTransport } from '@connectrpc/connect-node';
+import { createConnectTransport, Http2SessionManager } from '@connectrpc/connect-node';
 import { logger } from '@spraxium/logger';
 import { createRpcClient } from '@spraxium/rpc-client';
 import { RpcGateway } from '@spraxium/rpc-protocol';
@@ -12,7 +12,6 @@ import { RpcHandler } from '../src/handlers/rpc-handler.decorator';
 import { RpcRegistry } from '../src/handlers/rpc-handler.registry';
 import { RpcRuntimeComposition } from '../src/integration/rpc-runtime.composition';
 import type { RpcContext } from '../src/interfaces/rpc-context.interface';
-import { RpcServer } from '../src/transport/rpc.server';
 import { config, deferred, token } from './helpers';
 
 const cleanup: Array<() => void | Promise<void>> = [];
@@ -61,9 +60,7 @@ class TestHandlers {
       },
     },
   })
-  stats(input: {
-    guildId: string;
-  }) {
+  stats(input: { guildId: string }) {
     return { guildId: input.guildId, members: 42, premium: false };
   }
 

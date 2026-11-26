@@ -1,0 +1,17 @@
+name: Feature request
+description: Suggest a change to the SDK, adapter or protocol.
+title: "[Feature] "
+body:
+  - type: textarea
+    id: use-case
+    attributes:
+      label: What are you trying to do?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What change would help?
+      description: Mention any existing workaround or compatibility concern.
+    validations:
+      required: true

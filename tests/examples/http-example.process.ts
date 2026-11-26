@@ -13,7 +13,7 @@ export class HttpExampleProcess {
     gateway: string,
     token: string,
   ) {
-    this.child = spawn(process.execPath, ['src/main.js'], {
+    this.child = spawn(process.execPath, ['dist/main.js'], {
       cwd: directory,
       env: {
         ...process.env,

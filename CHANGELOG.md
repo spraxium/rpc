@@ -1,13 +1,25 @@
 # Changelog
 
-## 0.1.0 — unreleased
+## 0.10.0
 
-Update Zod, Hono and its Node adapter, Vitest, and vulnerable backend dependencies. Add regression tests for constrained collection validation, CSRF checks and mounted route protection.
+This is the first npm release of Spraxium RPC. A backend can call a named provider method inside a Discord bot and get a JSON response. The bot handles Discord and the backend keeps its web routes, sessions and public URLs.
 
-The bot adapter registers handlers through Spraxium's module lifecycle and uses existing DI providers. A parent gateway routes guild calls to their owning shard. Calls enforce credentials, handler permissions, deadlines, payload limits and concurrency limits, and drain during shutdown.
+- `@spraxium/rpc` runs the authenticated gateway in the bot. With native sharding, the parent routes guild calls to the shard that owns them and drains the gateway on shutdown.
+- `@spraxium/rpc-client` handles typed calls, deadlines and cancellation from Node.js. It supports ESM, CommonJS, Connect and gRPC.
+- `@spraxium/rpc-protocol` contains the shared Protobuf schema and JSON codec.
 
-The Node client supports ESM and CommonJS with the same implementation and error class. It creates resources for the selected Connect or gRPC transport and closes them explicitly. The shared protocol validates JSON values and preserves the v1 Protobuf contract.
+The bot, HTTP backends, and standalone clients in [examples](examples) are written in TypeScript. The SDK examples still show both ESM and CommonJS entry points.
 
-Examples run directly as JavaScript in separate projects for Hono, NestJS, Fastify, Express, Koa, native Node HTTP and ESM/CommonJS console clients. Tests cover their responses, native provider injection, gRPC and isolated package installation.
+The bot adapter requires framework 0.10.0 and Discord.js 14.28.1 or a compatible 14.x version.
 
-The packages remain unpublished. The adapter requires framework hooks that are not available in the recorded public release.
+### Why we are deprecating HTTP
+
+`@spraxium/http` combined the bridge to the bot with an HTTP framework. It meant maintaining controllers, routing, guards, middleware, CORS and request validation alongside the bridge. Projects that already run NestJS, Express or Hono often had the same pieces twice. Each security fix or change in web behavior gave us a second surface to maintain.
+
+RPC lets your web framework own the public API and its access rules. Spraxium can focus on calling the bot, routing to Discord shards, and handling the connection while the bot starts and stops. Move an existing route one at a time. Keep its URL and move the call to the bot behind it.
+
+- English · [Start using RPC](https://spraxium.com/en/guide/rpc-quickstart) · [Migrate from HTTP](https://spraxium.com/en/guide/rpc-http-migration)
+- Português · [Comece com RPC](https://spraxium.com/pt/guide/rpc-quickstart) · [Migre do HTTP](https://spraxium.com/pt/guide/rpc-http-migration)
+- Español · [Empieza con RPC](https://spraxium.com/es/guide/rpc-quickstart) · [Migra desde HTTP](https://spraxium.com/es/guide/rpc-http-migration)
+
+If you use a coding agent, give it the [migration skill](SKILL.md) and the walkthrough for your language.

@@ -18,7 +18,7 @@ export class RpcTokenAuthenticator implements RpcAuthenticator {
   }
 
   authenticate(header: string | null): RpcIdentity {
-    if (!header || !header.startsWith('Bearer ') || header.length > 8192)
+    if (!header?.startsWith('Bearer ') || header.length > 8192)
       throw new ConnectError('Authentication required.', Code.Unauthenticated);
     const digest = createHash('sha256').update(header.slice(7)).digest();
     let identity: RpcIdentity | undefined;

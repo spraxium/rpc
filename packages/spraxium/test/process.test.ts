@@ -6,7 +6,6 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { RpcRuntimeComposition } from '../src/integration/rpc-runtime.composition';
 import { RpcShardDispatcher } from '../src/sharding/rpc-shard-dispatcher.service';
 import type { RpcIpcMessage } from '../src/sharding/types/rpc-ipc-message.type';
-import { RpcServer } from '../src/transport/rpc.server';
 import { config, token } from './helpers';
 
 const children: Array<ChildProcess> = [];

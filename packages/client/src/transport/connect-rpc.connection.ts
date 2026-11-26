@@ -1,7 +1,7 @@
 import { Agent as HttpAgent } from 'node:http';
 import { Agent as HttpsAgent } from 'node:https';
 import { createClient } from '@connectrpc/connect';
-import { Http2SessionManager, createConnectTransport, createGrpcTransport } from '@connectrpc/connect-node';
+import { createConnectTransport, createGrpcTransport, Http2SessionManager } from '@connectrpc/connect-node';
 import { RpcGateway } from '@spraxium/rpc-protocol';
 import type { ResolvedRpcClientOptions } from '../interfaces/resolved-rpc-client-options.interface';
 import type { RpcCallOptions } from '../interfaces/rpc-call-options.interface';

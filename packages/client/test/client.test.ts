@@ -3,6 +3,17 @@ import { describe, expect, expectTypeOf, it } from 'vitest';
 import { Code, createRpcClient } from '../src';
 
 describe('client and JSON contract', () => {
+  it('omits an invalid URL from configuration errors', () => {
+    const url = 'https://example.invalid:invalid-port';
+    try {
+      createRpcClient({ url, token: 'test' });
+      throw new Error('Expected the client to reject the URL.');
+    } catch (error) {
+      expect(error).toMatchObject({ message: 'Invalid RPC URL.' });
+      expect(error).not.toHaveProperty('input');
+    }
+  });
+
   it.each([
     undefined,
     1n,

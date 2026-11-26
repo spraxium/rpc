@@ -5,8 +5,8 @@ import { RpcConfigResolver } from '../src/configuration/rpc-config.resolver';
 import { RpcHandler } from '../src/handlers/rpc-handler.decorator';
 import { RpcRegistry } from '../src/handlers/rpc-handler.registry';
 import type { RpcFrameworkHost } from '../src/integration/interfaces/rpc-framework-host.interface';
-import { RpcModuleLifecycle } from '../src/integration/rpc-module.lifecycle';
 import { RpcLifecycle } from '../src/integration/rpc.lifecycle';
+import { RpcModuleLifecycle } from '../src/integration/rpc-module.lifecycle';
 import { RpcServer } from '../src/transport/rpc.server';
 import { config } from './helpers';
 

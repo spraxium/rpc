@@ -11,9 +11,8 @@ import { RpcGuildIdValidator } from '../handlers/rpc-guild-id.validator';
 import { RpcHandlerOptionsValidator } from '../handlers/rpc-handler-options.validator';
 import type { RpcContext } from '../interfaces/rpc-context.interface';
 import { RpcAccessPolicy } from '../security/rpc-access.policy';
-import type { RpcIpcPeer } from './interfaces/rpc-ipc-peer.interface';
-import type { RpcShardListeners } from './interfaces/rpc-shard-listeners.interface';
 import type { RpcShard } from './interfaces/rpc-shard.interface';
+import type { RpcShardListeners } from './interfaces/rpc-shard-listeners.interface';
 import { RPC_IPC } from './rpc-ipc.constant';
 import { RpcIpcValidator } from './rpc-ipc.validator';
 import { RpcPendingRequest } from './rpc-pending.request';
@@ -22,6 +21,7 @@ import type { RpcIpcMessage } from './types/rpc-ipc-message.type';
 export class RpcShardDispatcher implements RpcDispatcher {
   private readonly handlers = new Map<string, RpcHandlerDescription>();
   private readonly available = new Set<number>();
+  private readonly descriptionsInProgress = new Map<number, string>();
   private readonly pending = new Map<string, RpcPendingRequest>();
   private readonly subscriptions: Array<RpcShardListeners> = [];
   private stopping = false;
@@ -63,28 +63,38 @@ export class RpcShardDispatcher implements RpcDispatcher {
 
   private async describe(shard: RpcShard): Promise<void> {
     this.available.delete(shard.id);
-    const message = await this.request(
-      shard,
-      { rpc: RPC_IPC, kind: 'describe', id: randomUUID() },
-      this.config.timeoutMs,
-    );
-    if (this.stopping) throw RpcFailureMapper.ipcUnavailable();
-    if (message.kind !== 'manifest') throw RpcFailureMapper.ipcUnavailable();
+    const id = randomUUID();
+    this.descriptionsInProgress.set(shard.id, id);
+    try {
+      const message = await this.request(
+        shard,
+        { rpc: RPC_IPC, kind: 'describe', id },
+        this.config.timeoutMs,
+      );
+      if (this.descriptionsInProgress.get(shard.id) !== id) return;
+      if (this.stopping || message.kind !== 'manifest') throw RpcFailureMapper.ipcUnavailable();
+      this.registerManifest(shard.id, message.handlers);
+      this.available.add(shard.id);
+    } finally {
+      if (this.descriptionsInProgress.get(shard.id) === id) this.descriptionsInProgress.delete(shard.id);
+    }
+  }
+
+  private registerManifest(shardId: number, handlers: ReadonlyArray<RpcHandlerDescription>): void {
     const descriptions = new Map<string, RpcHandlerDescription>();
-    for (const handler of message.handlers) {
+    for (const handler of handlers) {
       RpcHandlerOptionsValidator.validate(handler.name, handler);
       if (descriptions.has(handler.name)) throw new Error(`Duplicate RPC handler: ${handler.name}.`);
       descriptions.set(handler.name, handler);
     }
     const signature = this.canonical([...descriptions.values()]);
     if (this.manifestSignature !== undefined && signature !== this.manifestSignature) {
-      throw new Error(`RPC handler manifest differs on shard ${shard.id}.`);
+      throw new Error(`RPC handler manifest differs on shard ${shardId}.`);
     }
     if (this.manifestSignature === undefined) {
       for (const [name, handler] of descriptions) this.handlers.set(name, handler);
       this.manifestSignature = signature;
     }
-    this.available.add(shard.id);
   }
 
   descriptions() {
@@ -170,6 +180,7 @@ export class RpcShardDispatcher implements RpcDispatcher {
       shard.off('ready', listeners.ready);
     }
     this.available.clear();
+    this.descriptionsInProgress.clear();
   }
 
   private receive(shard: RpcShard, value: unknown): void {
@@ -180,12 +191,13 @@ export class RpcShardDispatcher implements RpcDispatcher {
 
   private markUnavailable(shard: RpcShard): void {
     this.available.delete(shard.id);
+    this.descriptionsInProgress.delete(shard.id);
     for (const call of [...this.pending.values()])
-      if (call.shardId === shard.id) call.finish(undefined, RpcFailureMapper.ipcUnavailable());
+      if (call.shardId === shard.id) call.cancel(RpcFailureMapper.ipcUnavailable());
   }
 
   private refresh(shard: RpcShard): void {
-    void this.describe(shard).catch(() => this.available.delete(shard.id));
+    void this.describe(shard).catch(() => undefined);
   }
 
   private release(id: string): void {

@@ -1,5 +1,5 @@
 import { Code, ConnectError } from '@connectrpc/connect';
-import { type RpcMethodContract, decodeJson, encodeJson } from '@spraxium/rpc-protocol';
+import { decodeJson, encodeJson, type RpcMethodContract } from '@spraxium/rpc-protocol';
 import type { ResolvedRpcClientOptions } from './interfaces/resolved-rpc-client-options.interface';
 import type { RpcCallOptions } from './interfaces/rpc-call-options.interface';
 import type { RpcClient } from './interfaces/rpc-client.interface';

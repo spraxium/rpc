@@ -3,14 +3,14 @@ packages:
   - examples/*
 
 catalog:
-  '@bufbuild/protobuf': 2.16.0
-  '@bufbuild/protoc-gen-es': 2.16.0
-  '@connectrpc/connect': 2.2.0
-  '@connectrpc/connect-node': 2.2.0
-  '@spraxium/common': 0.3.0
-  '@spraxium/core': 0.3.0
-  '@spraxium/logger': 0.3.0
-  discord.js: 14.27.0
+  '@bufbuild/protobuf': 2.17.0
+  '@bufbuild/protoc-gen-es': 2.17.0
+  '@connectrpc/connect': 2.3.0
+  '@connectrpc/connect-node': 2.3.0
+  '@spraxium/common': 0.9.1
+  '@spraxium/core': 0.9.1
+  '@spraxium/logger': 0.9.1
+  discord.js: 14.28.1
   reflect-metadata: 0.2.2
 
 engineStrict: true

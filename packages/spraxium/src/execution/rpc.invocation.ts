@@ -4,9 +4,9 @@ import type { ResolvedRpcConfig } from '../configuration/interfaces/resolved-rpc
 import type { RegisteredRpcHandler } from '../handlers/interfaces/registered-rpc-handler.interface';
 import { RpcGuildIdValidator } from '../handlers/rpc-guild-id.validator';
 import type { RpcContext } from '../interfaces/rpc-context.interface';
+import { RpcError } from './rpc.error';
 import { RpcFailureMapper } from './rpc-failure.mapper';
 import { RpcSchemaValidator } from './rpc-schema.validator';
-import { RpcError } from './rpc.error';
 
 export class RpcInvocation {
   readonly controller = new AbortController();

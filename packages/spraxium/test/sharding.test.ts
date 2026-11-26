@@ -120,6 +120,20 @@ describe('explicit shard request-response IPC', () => {
     });
   });
 
+  it('ignores a manifest that arrived just before its shard disconnected', async () => {
+    const { dispatcher, shards } = await createShards();
+    const shard = shards.get(1);
+    if (!shard) throw new Error('Missing shard');
+
+    shard.emit('ready');
+    shard.emit('disconnect');
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    const payload = encodeJson({ guildId: '4194304' }, 1024);
+    await expect(dispatcher.invoke('guild.stats', payload, context())).rejects.toMatchObject({
+      code: Code.Unavailable,
+    });
+  });
+
   it('routes guilds using the actual Discord formula and executes only once in the destination container', async () => {
     const { dispatcher, shards, calls } = await createShards();
     const payload = encodeJson({ guildId: '4194304' }, 1024);

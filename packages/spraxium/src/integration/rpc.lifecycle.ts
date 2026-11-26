@@ -1,5 +1,5 @@
-import { Inject, Injectable } from '@spraxium/common';
 import type { SpraxiumOnBoot, SpraxiumOnShutdown } from '@spraxium/common';
+import { Inject, Injectable } from '@spraxium/common';
 import { RpcConfigResolver } from '../configuration/rpc-config.resolver';
 import { RpcExecutor } from '../execution/rpc.executor';
 import { RpcRegistry } from '../handlers/rpc-handler.registry';

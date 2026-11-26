@@ -47,6 +47,8 @@ export class RpcPendingRequest {
 
   finish(response?: RpcIpcMessage, error?: ConnectError): void {
     if (this.settled) return;
+    const expectedKind = this.message.kind === 'describe' ? 'manifest' : 'result';
+    if (response && response.kind !== expectedKind && response.kind !== 'error') return;
     this.settled = true;
     clearTimeout(this.timer);
     this.signal?.removeEventListener('abort', this.abort);

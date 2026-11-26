@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import { Module } from '@spraxium/common';
 import { ConfigStore, ModuleLoader } from '@spraxium/core';
-import { RpcHandler, RpcModule, defineRpc } from '@spraxium/rpc';
+import { defineRpc, RpcHandler, RpcModule } from '@spraxium/rpc';
 import { Client } from 'discord.js';
 
 class GuildService {

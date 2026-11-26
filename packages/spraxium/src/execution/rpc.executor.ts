@@ -6,9 +6,9 @@ import type { RpcRegistry } from '../handlers/rpc-handler.registry';
 import type { RpcContext } from '../interfaces/rpc-context.interface';
 import { RpcAccessPolicy } from '../security/rpc-access.policy';
 import type { RpcDispatcher } from './interfaces/rpc-dispatcher.interface';
+import { RpcInvocation } from './rpc.invocation';
 import { RpcCancellation } from './rpc-cancellation.service';
 import { RpcFailureMapper } from './rpc-failure.mapper';
-import { RpcInvocation } from './rpc.invocation';
 
 export class RpcExecutor implements RpcDispatcher {
   private stopping = false;

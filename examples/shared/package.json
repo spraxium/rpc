@@ -1,0 +1,19 @@
+{
+  "name": "@spraxium/rpc-example-shared",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./bot-rpc-client": "./dist/types/bot-rpc-client.type.js",
+    "./bot-rpc-contract": "./dist/types/bot-rpc-contract.type.js",
+    "./environment": "./dist/environment.service.js",
+    "./http-server": "./dist/http-server.lifecycle.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@spraxium/rpc-client": "workspace:*"
+  }
+}

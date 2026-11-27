@@ -15,8 +15,8 @@ Keep behavior with the class that owns it. Pass dependencies through constructor
 
 ## npm release
 
-A push to `main` that changes the package manifests starts **Publish RPC**. The workflow tests and packs the version in the manifests, then submits the packages that npm does not have yet. For a manual archive check, run the workflow with `prepare`.
+A push to `main` that changes the package manifests starts **Stage RPC release**. The workflow tests, packs, and stages the version in the manifests. Review the artifacts in npm and approve the pending packages with 2FA. For a manual archive check, run the workflow with `prepare`.
 
-Publish the compatible framework version first. Each RPC package uses npm trusted publishing for `spraxium/rpc` and `release.yml`. An npm scope maintainer needs to create a new package before setting up its trusted publisher. For an existing package, the `stage` option leaves approval to a maintainer.
+Publish the compatible framework version first. Configure each RPC package to allow staged publishing from the `release.yml` workflow in `spraxium/rpc`. An npm scope maintainer stages a new package for the first time and sets up its trusted publisher.
 
 Keep the RPC packages at the same version. Use `pnpm changeset` to record a change and `pnpm version` to apply the plan when cutting a new version. Release notes for versions already assigned in the manifests use `none` so Changesets does not bump them again.

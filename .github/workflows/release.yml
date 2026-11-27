@@ -1,4 +1,4 @@
-name: Publish RPC
+name: Stage RPC release
 
 on:
   push:
@@ -9,17 +9,16 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: Version to publish
+        description: Version to stage
         required: true
         type: string
       publication:
-        description: Prepare archives, stage for review, or publish directly
+        description: Prepare archives or stage for review
         type: choice
         default: stage
         options:
           - prepare
           - stage
-          - publish
 
 permissions:
   contents: read
@@ -29,7 +28,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  publish:
+  stage:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 25
@@ -139,11 +138,10 @@ jobs:
 
           RPC_FRAMEWORK_FIXTURE="$consumer/bot.mjs" pnpm test:framework
 
-      - name: Submit to npm in dependency order
+      - name: Stage packages in dependency order
         if: inputs.publication != 'prepare'
         env:
           RELEASE_VERSION: ${{ steps.version.outputs.number }}
-          PUBLICATION: ${{ inputs.publication || 'publish' }}
           PUBLIC_REPOSITORY: ${{ !github.event.repository.private }}
         run: |
           registry() {
@@ -159,32 +157,28 @@ jobs:
             esac
           }
 
-          submit() {
+          stage() {
             local package="$1"
             local archive="$RUNNER_TEMP/rpc-packages/spraxium-$package-$RELEASE_VERSION.tgz"
 
             if registry "@spraxium%2f$package/$RELEASE_VERSION"; then
               echo "@spraxium/$package@$RELEASE_VERSION is already published."
-            elif [[ "$PUBLICATION" == stage ]]; then
-              npm stage publish "$archive" --tag latest --access public --provenance="$PUBLIC_REPOSITORY"
             else
-              npm publish "$archive" --tag latest --access public --provenance="$PUBLIC_REPOSITORY"
+              npm stage publish "$archive" --tag latest --access public --provenance="$PUBLIC_REPOSITORY"
             fi
           }
 
           # Bootstrap a new package before any other package moves to the new version.
           if ! registry '@spraxium%2frpc-server'; then
-            if ! submit rpc-server; then
-              echo "::error::The first @spraxium/rpc-server publication needs npm scope credentials. Use the uploaded archive to publish or stage it, then configure this workflow as its trusted publisher."
+            if ! stage rpc-server; then
+              echo "::error::The first @spraxium/rpc-server publication needs npm scope credentials. Use the uploaded archive to stage it, then configure this workflow as its trusted publisher."
               exit 1
             fi
 
-            if [[ "$PUBLICATION" == stage ]]; then
-              echo "Approve @spraxium/rpc-server and configure its trusted publisher before submitting the rest of this release."
-              exit 0
-            fi
+            echo "Approve @spraxium/rpc-server and configure its trusted publisher before submitting the rest of this release."
+            exit 0
           fi
 
           for package in rpc-protocol rpc-client rpc-server rpc; do
-            submit "$package"
+            stage "$package"
           done

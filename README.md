@@ -1,7 +1,7 @@
 <div align="center">
   <img src=".github/assets/spraxium-logo.png" alt="Spraxium logo" width="88" />
   <h1>Spraxium RPC</h1>
-  <p>Call your Discord bot from a backend, script, or worker.</p>
+  <p>Connect a Spraxium bot and a Node.js backend with typed RPC.</p>
   <p><a href="https://spraxium.com/en/guide/rpc-overview">Documentation</a></p>
 </div>
 
@@ -9,14 +9,16 @@ Use RPC when a separate process needs something from your Spraxium bot. A dashbo
 
 Put `@spraxium/rpc` in the bot and `@spraxium/rpc-client` in your backend. Use Spraxium framework 0.10.0 or a later 0.10 patch. Follow the three files under [First call](#first-call). For a web project with `@spraxium/http`, keep the route in your backend and [move the bot call](#migrate-from-http). [Full guide](https://spraxium.com/en/guide/rpc-quickstart) · [HTTP migration](https://spraxium.com/en/guide/rpc-http-migration)
 
+Starting with RPC 0.10.1, the bot can also call your backend. Run [`@spraxium/rpc-server`](packages/server) in the backend and use the same client package in the bot. It's a separate gateway with its own URL and token. The [two-way NestJS guide](https://spraxium.com/en/guide/rpc-nestjs-two-way) shows both directions and includes a plain Node.js example.
+
 ## First call
 
 ~~~sh
 # Bot
-pnpm add @spraxium/rpc@0.10.0
+pnpm add @spraxium/rpc@0.10.1
 
 # Backend
-pnpm add @spraxium/rpc-client@0.10.0
+pnpm add @spraxium/rpc-client@0.10.1
 ~~~
 
 Generate a secret and set it as `SPRAXIUM_RPC_TOKEN` in both processes.

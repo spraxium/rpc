@@ -242,6 +242,9 @@ importers:
       '@commitlint/types':
         specifier: 21.2.3
         version: 21.2.3
+      '@spraxium/rpc-server':
+        specifier: workspace:*
+        version: link:packages/server
       '@types/node':
         specifier: 22.20.5
         version: 22.20.5
@@ -272,6 +275,9 @@ importers:
       '@spraxium/rpc':
         specifier: workspace:*
         version: link:../../packages/spraxium
+      '@spraxium/rpc-client':
+        specifier: workspace:*
+        version: link:../../packages/client
       '@spraxium/rpc-example-shared':
         specifier: workspace:*
         version: link:../shared
@@ -364,12 +370,18 @@ importers:
       '@spraxium/rpc-example-shared':
         specifier: workspace:*
         version: link:../shared
+      '@spraxium/rpc-server':
+        specifier: workspace:*
+        version: link:../../packages/server
       reflect-metadata:
         specifier: 'catalog:'
         version: 0.2.2
       rxjs:
         specifier: ^7.8.1
         version: 7.8.2
+      zod:
+        specifier: ^4.6.6
+        version: 4.6.7
 
   examples/node-client:
     dependencies:
@@ -413,7 +425,7 @@ importers:
         specifier: 'catalog:'
         version: 2.17.0
 
-  packages/spraxium:
+  packages/server:
     dependencies:
       '@connectrpc/connect':
         specifier: 'catalog:'
@@ -424,10 +436,25 @@ importers:
       '@spraxium/rpc-protocol':
         specifier: workspace:*
         version: link:../protocol
+
+  packages/spraxium:
+    dependencies:
+      '@connectrpc/connect':
+        specifier: 'catalog:'
+        version: 2.3.0(@bufbuild/protobuf@2.17.0)
+      '@spraxium/rpc-protocol':
+        specifier: workspace:*
+        version: link:../protocol
+      '@spraxium/rpc-server':
+        specifier: workspace:*
+        version: link:../server
       reflect-metadata:
         specifier: 'catalog:'
         version: 0.2.2
     devDependencies:
+      '@connectrpc/connect-node':
+        specifier: 'catalog:'
+        version: 2.3.0(@bufbuild/protobuf@2.17.0)(@connectrpc/connect@2.3.0(@bufbuild/protobuf@2.17.0))
       '@spraxium/common':
         specifier: 'catalog:'
         version: 0.9.1(discord.js@14.28.1)

@@ -12,6 +12,7 @@ export class HttpExampleProcess {
     private readonly port: number,
     gateway: string,
     token: string,
+    environment: NodeJS.ProcessEnv,
   ) {
     this.child = spawn(process.execPath, ['dist/main.js'], {
       cwd: directory,
@@ -21,13 +22,19 @@ export class HttpExampleProcess {
         HTTP_HOST: '127.0.0.1',
         SPRAXIUM_RPC_URL: gateway,
         SPRAXIUM_RPC_TOKEN: token,
+        ...environment,
       },
     });
     this.child.stdout.on('data', this.capture.bind(this));
     this.child.stderr.on('data', this.capture.bind(this));
   }
 
-  static async start(directory: string, gateway: string, token: string): Promise<HttpExampleProcess> {
+  static async start(
+    directory: string,
+    gateway: string,
+    token: string,
+    environment: NodeJS.ProcessEnv = {},
+  ): Promise<HttpExampleProcess> {
     const reservation = createServer();
     reservation.listen(0, '127.0.0.1');
     await once(reservation, 'listening');
@@ -35,7 +42,7 @@ export class HttpExampleProcess {
     if (!address || typeof address === 'string') throw new Error('No available example port.');
 
     await new Promise<void>((resolve) => reservation.close(() => resolve()));
-    const instance = new HttpExampleProcess(directory, address.port, gateway, token);
+    const instance = new HttpExampleProcess(directory, address.port, gateway, token, environment);
 
     try {
       await instance.waitForReady();
@@ -50,6 +57,10 @@ export class HttpExampleProcess {
     return fetch(`http://127.0.0.1:${this.port}/guilds/${guildId}/stats`, {
       signal: AbortSignal.timeout(3000),
     });
+  }
+
+  get rpcAddress(): string | undefined {
+    return this.output.match(/RPC handlers; listening on (http:\/\/127\.0\.0\.1:\d+)/)?.[1];
   }
 
   async stop(): Promise<void> {

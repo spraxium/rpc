@@ -1,6 +1,11 @@
 name: Publish RPC
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/release.yml"
+      - "packages/*/package.json"
   workflow_dispatch:
     inputs:
       version:
@@ -52,14 +57,18 @@ jobs:
           npm --version
 
       - name: Validate version and framework record
+        id: version
         env:
           RELEASE_VERSION: ${{ inputs.version }}
         run: |
+          RELEASE_VERSION="${RELEASE_VERSION:-$(jq -er .version packages/spraxium/package.json)}"
           [[ "$RELEASE_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+
+          echo "number=$RELEASE_VERSION" >> "$GITHUB_OUTPUT"
 
           node scripts/verify-framework.mjs
 
-          for package in protocol client spraxium; do
+          for package in protocol client server spraxium; do
             jq -e --arg version "$RELEASE_VERSION" \
               '.version == $version' \
               "packages/$package/package.json"
@@ -75,7 +84,7 @@ jobs:
 
       - name: Pack and verify release files
         env:
-          RELEASE_VERSION: ${{ inputs.version }}
+          RELEASE_VERSION: ${{ steps.version.outputs.number }}
         run: |
           archives="$RUNNER_TEMP/rpc-packages"
 
@@ -84,7 +93,7 @@ jobs:
           pnpm --filter './packages/*' -r pack \
             --pack-destination "$archives"
 
-          for package in rpc-protocol rpc-client rpc; do
+          for package in rpc-protocol rpc-client rpc-server rpc; do
             archive="$archives/spraxium-$package-$RELEASE_VERSION.tgz"
 
             tar -xOf "$archive" package/package.json | jq -e \
@@ -98,14 +107,14 @@ jobs:
       - name: Upload release files
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: spraxium-rpc-${{ inputs.version }}
+          name: spraxium-rpc-${{ steps.version.outputs.number }}
           path: ${{ runner.temp }}/rpc-packages/*.tgz
           if-no-files-found: error
 
       - name: Test with the published framework
         if: inputs.publication != 'prepare'
         env:
-          RELEASE_VERSION: ${{ inputs.version }}
+          RELEASE_VERSION: ${{ steps.version.outputs.number }}
         run: |
           archives="$RUNNER_TEMP/rpc-packages"
           consumer="$RUNNER_TEMP/rpc-consumer"
@@ -123,6 +132,7 @@ jobs:
             "@spraxium/env@$framework" \
             "$archives/spraxium-rpc-protocol-$RELEASE_VERSION.tgz" \
             "$archives/spraxium-rpc-client-$RELEASE_VERSION.tgz" \
+            "$archives/spraxium-rpc-server-$RELEASE_VERSION.tgz" \
             "$archives/spraxium-rpc-$RELEASE_VERSION.tgz"
 
           cp packages/spraxium/test/fixtures/bot.mjs "$consumer/bot.mjs"
@@ -132,36 +142,49 @@ jobs:
       - name: Submit to npm in dependency order
         if: inputs.publication != 'prepare'
         env:
-          RELEASE_VERSION: ${{ inputs.version }}
-          PUBLICATION: ${{ inputs.publication }}
+          RELEASE_VERSION: ${{ steps.version.outputs.number }}
+          PUBLICATION: ${{ inputs.publication || 'publish' }}
           PUBLIC_REPOSITORY: ${{ !github.event.repository.private }}
         run: |
-          for package in rpc-protocol rpc-client rpc; do
-            archive="$RUNNER_TEMP/rpc-packages/spraxium-$package-$RELEASE_VERSION.tgz"
+          registry() {
+            local resource="$1" status
 
-            published="$(npm view "@spraxium/$package@$RELEASE_VERSION" \
-              dist.integrity --prefer-online 2>/dev/null || true)"
+            status="$(curl --silent --show-error --retry 3 --output /dev/null \
+              --write-out '%{http_code}' "https://registry.npmjs.org/$resource")" || exit 1
 
-            if [[ -n "$published" ]]; then
-              actual="sha512-$(openssl dgst -sha512 -binary "$archive" | openssl base64 -A)"
+            case "$status" in
+              200) return 0 ;;
+              404) return 1 ;;
+              *) echo "::error::npm registry returned $status for $resource"; exit 1 ;;
+            esac
+          }
 
-              if [[ "$published" != "$actual" ]]; then
-                echo "::error::Integrity mismatch for @spraxium/$package@$RELEASE_VERSION"
-                exit 1
-              fi
+          submit() {
+            local package="$1"
+            local archive="$RUNNER_TEMP/rpc-packages/spraxium-$package-$RELEASE_VERSION.tgz"
 
+            if registry "@spraxium%2f$package/$RELEASE_VERSION"; then
               echo "@spraxium/$package@$RELEASE_VERSION is already published."
-
             elif [[ "$PUBLICATION" == stage ]]; then
-              npm stage publish "$archive" \
-                --tag latest \
-                --access public \
-                --provenance="$PUBLIC_REPOSITORY"
-
+              npm stage publish "$archive" --tag latest --access public --provenance="$PUBLIC_REPOSITORY"
             else
-              npm publish "$archive" \
-                --tag latest \
-                --access public \
-                --provenance="$PUBLIC_REPOSITORY"
+              npm publish "$archive" --tag latest --access public --provenance="$PUBLIC_REPOSITORY"
             fi
+          }
+
+          # Bootstrap a new package before any other package moves to the new version.
+          if ! registry '@spraxium%2frpc-server'; then
+            if ! submit rpc-server; then
+              echo "::error::The first @spraxium/rpc-server publication needs npm scope credentials. Use the uploaded archive to publish or stage it, then configure this workflow as its trusted publisher."
+              exit 1
+            fi
+
+            if [[ "$PUBLICATION" == stage ]]; then
+              echo "Approve @spraxium/rpc-server and configure its trusted publisher before submitting the rest of this release."
+              exit 0
+            fi
+          fi
+
+          for package in rpc-protocol rpc-client rpc-server rpc; do
+            submit "$package"
           done

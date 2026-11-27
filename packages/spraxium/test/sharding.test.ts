@@ -2,12 +2,13 @@ import { randomUUID } from 'node:crypto';
 import { EventEmitter, once } from 'node:events';
 import { Code } from '@connectrpc/connect';
 import { decodeJson, encodeJson } from '@spraxium/rpc-protocol';
+import type { RpcContext } from '@spraxium/rpc-server';
+import type { RpcDispatcher } from '@spraxium/rpc-server/runtime';
+import { RpcExecutor } from '@spraxium/rpc-server/runtime';
 import { afterEach, describe, expect, it } from 'vitest';
-import type { RpcDispatcher } from '../src/execution/interfaces/rpc-dispatcher.interface';
-import { RpcExecutor } from '../src/execution/rpc.executor';
+import type { RpcHandlerDescription } from '../src/handlers/interfaces/rpc-handler-description.interface';
 import { RpcHandler } from '../src/handlers/rpc-handler.decorator';
 import { RpcRegistry } from '../src/handlers/rpc-handler.registry';
-import type { RpcContext } from '../src/interfaces/rpc-context.interface';
 import type { RpcIpcPeer } from '../src/sharding/interfaces/rpc-ipc-peer.interface';
 import { RPC_IPC } from '../src/sharding/rpc-ipc.constant';
 import { RpcShardDispatcher } from '../src/sharding/rpc-shard-dispatcher.service';
@@ -98,7 +99,7 @@ async function createShards() {
 describe('explicit shard request-response IPC', () => {
   it('detaches worker listeners even when executor shutdown fails', async () => {
     const shard = new TestShard(0);
-    const executor: RpcDispatcher = {
+    const executor: RpcDispatcher<RpcHandlerDescription> = {
       descriptions: () => [],
       invoke: async () => new Uint8Array(),
       close: async () => {

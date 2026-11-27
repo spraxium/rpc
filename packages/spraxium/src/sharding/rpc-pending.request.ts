@@ -1,5 +1,5 @@
 import { Code, ConnectError } from '@connectrpc/connect';
-import { RpcFailureMapper } from '../execution/rpc-failure.mapper';
+import { RpcFailureMapper } from '@spraxium/rpc-server/runtime';
 import type { RpcShard } from './interfaces/rpc-shard.interface';
 import { RPC_IPC } from './rpc-ipc.constant';
 import type { RpcIpcMessage } from './types/rpc-ipc-message.type';

@@ -1,5 +1,5 @@
 import process from 'node:process';
-import { RpcFailureMapper } from '../execution/rpc-failure.mapper';
+import { RpcFailureMapper } from '@spraxium/rpc-server/runtime';
 import type { RpcIpcPeer } from './interfaces/rpc-ipc-peer.interface';
 import type { RpcIpcMessage } from './types/rpc-ipc-message.type';
 

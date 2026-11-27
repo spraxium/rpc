@@ -6,6 +6,7 @@
   "exports": {
     "./bot-rpc-client": "./dist/types/bot-rpc-client.type.js",
     "./bot-rpc-contract": "./dist/types/bot-rpc-contract.type.js",
+    "./nest-rpc-contract": "./dist/types/nest-rpc-contract.type.js",
     "./environment": "./dist/environment.service.js",
     "./http-server": "./dist/http-server.lifecycle.js"
   },

@@ -6,10 +6,19 @@ export class ExampleEnvironment {
   }
 
   static port(): number {
-    const raw = process.env.PORT ?? '3000';
+    return ExampleEnvironment.readPort('PORT', '3000');
+  }
+
+  /** Returns the dedicated port for bot-to-Nest RPC calls. */
+  static nestRpcPort(): number {
+    return ExampleEnvironment.readPort('NEST_RPC_PORT', '4400');
+  }
+
+  private static readPort(name: string, fallback: string): number {
+    const raw = process.env[name] ?? fallback;
     const port = Number(raw);
     if (!/^\d+$/.test(raw) || !Number.isInteger(port) || port < 0 || port > 65535)
-      throw new Error('PORT must be an integer between 0 and 65535.');
+      throw new Error(`${name} must be an integer between 0 and 65535.`);
 
     return port;
   }
@@ -27,6 +36,15 @@ export class ExampleEnvironment {
       url: ExampleEnvironment.required('SPRAXIUM_RPC_URL'),
       token: ExampleEnvironment.required('SPRAXIUM_RPC_TOKEN'),
       allowInsecure: process.env.SPRAXIUM_RPC_PRIVATE_NETWORK === 'true',
+      timeoutMs: 3000,
+    };
+  }
+
+  /** Loads the bot's outbound client settings for the NestJS gateway. */
+  static nestRpcOptions(): RpcClientOptions {
+    return {
+      url: process.env.NEST_RPC_URL ?? 'http://127.0.0.1:4400',
+      token: ExampleEnvironment.required('NEST_RPC_TOKEN'),
       timeoutMs: 3000,
     };
   }

@@ -1,7 +1,7 @@
 {
   "changelog": "@changesets/cli/changelog",
   "commit": false,
-  "fixed": [["@spraxium/rpc", "@spraxium/rpc-client", "@spraxium/rpc-protocol"]],
+  "fixed": [["@spraxium/rpc", "@spraxium/rpc-client", "@spraxium/rpc-protocol", "@spraxium/rpc-server"]],
   "linked": [],
   "access": "public",
   "baseBranch": "main",

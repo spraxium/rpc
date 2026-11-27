@@ -1,4 +1,4 @@
-import type { RpcArgumentSchema } from './rpc-argument-schema.interface';
+import type { RpcArgumentSchema } from '@spraxium/rpc-server';
 
 export interface RpcHandlerOptions {
   routing: 'guild' | 'singleton';

@@ -1,0 +1,47 @@
+{
+  "name": "@spraxium/rpc-server",
+  "version": "0.10.1",
+  "description": "Authenticated Spraxium RPC gateway for Node.js applications",
+  "homepage": "https://spraxium.com/en/guide/rpc-nestjs-two-way",
+  "bugs": { "url": "https://github.com/spraxium/rpc/issues" },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/spraxium/rpc.git",
+    "directory": "packages/server"
+  },
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./runtime": {
+      "types": "./dist/runtime.d.ts",
+      "import": "./dist/runtime.js",
+      "require": "./dist/runtime.js",
+      "default": "./dist/runtime.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsdown",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@connectrpc/connect": "catalog:",
+    "@connectrpc/connect-node": "catalog:",
+    "@spraxium/rpc-protocol": "workspace:*"
+  },
+  "engines": {
+    "node": ">=22.23.2 <27"
+  },
+  "license": "Apache-2.0",
+  "publishConfig": {
+    "access": "public"
+  },
+  "sideEffects": false
+}

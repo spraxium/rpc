@@ -11,7 +11,7 @@ import type { Socket } from 'node:net';
 import { Code, ConnectError, type ConnectRouter, type HandlerContext } from '@connectrpc/connect';
 import { connectNodeAdapter } from '@connectrpc/connect-node';
 import { type InvokeRequest, RpcGateway } from '@spraxium/rpc-protocol';
-import type { ResolvedRpcConfig } from '../configuration/interfaces/resolved-rpc-config.interface';
+import type { ResolvedRpcServerConfig } from '../configuration/interfaces/resolved-rpc-server-config.interface';
 import type { RpcDispatcher } from '../execution/interfaces/rpc-dispatcher.interface';
 import { RpcCancellation } from '../execution/rpc-cancellation.service';
 import { RpcFailureMapper } from '../execution/rpc-failure.mapper';
@@ -20,7 +20,7 @@ import type { RpcRateLimiter } from '../security/interfaces/rpc-rate-limiter.int
 import type { RpcLogger } from './interfaces/rpc-logger.interface';
 
 export class RpcServer {
-  private readonly registeredMethods: Set<string>;
+  private readonly registeredMethods = new Set<string>();
   private server?: Http2Server | Http2SecureServer;
   private readonly sessions = new Set<ServerHttp2Session>();
   private readonly sockets = new Set<Socket>();
@@ -29,15 +29,12 @@ export class RpcServer {
   private closing?: Promise<void>;
 
   constructor(
-    private readonly config: ResolvedRpcConfig,
+    private readonly config: ResolvedRpcServerConfig,
     private readonly dispatcher: RpcDispatcher,
     private readonly authenticator: RpcAuthenticator,
     private readonly rateLimiter: RpcRateLimiter,
     private readonly log: RpcLogger,
-  ) {
-    this.registeredMethods = new Set();
-    for (const handler of dispatcher.descriptions()) this.registeredMethods.add(handler.name);
-  }
+  ) {}
 
   get address(): string | undefined {
     const address = this.server?.address();
@@ -49,6 +46,8 @@ export class RpcServer {
   async start(): Promise<void> {
     if (!this.config.enabled) return;
     if (this.server || this.stopping) throw new Error('RPC server has already been started or closed.');
+
+    for (const handler of this.dispatcher.descriptions()) this.registeredMethods.add(handler.name);
 
     const adapter = connectNodeAdapter({
       routes: this.registerRoutes.bind(this),

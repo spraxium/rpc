@@ -2,8 +2,8 @@ import { Code, ConnectError } from '@connectrpc/connect';
 import type { RpcArgumentSchema } from '../handlers/interfaces/rpc-argument-schema.interface';
 
 export class RpcSchemaValidator {
-  static parse(schema: RpcArgumentSchema, value: unknown, response: boolean): unknown {
-    let parsed: unknown;
+  static parse<Output>(schema: RpcArgumentSchema<Output>, value: unknown, response: boolean): Output {
+    let parsed: Output;
 
     try {
       parsed = schema.parse(value);

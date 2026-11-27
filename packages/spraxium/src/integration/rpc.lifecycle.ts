@@ -1,18 +1,19 @@
 import type { SpraxiumOnBoot, SpraxiumOnShutdown } from '@spraxium/common';
 import { Inject, Injectable } from '@spraxium/common';
+import type { RpcServer } from '@spraxium/rpc-server/runtime';
+import { RpcExecutor } from '@spraxium/rpc-server/runtime';
 import { RpcConfigResolver } from '../configuration/rpc-config.resolver';
-import { RpcExecutor } from '../execution/rpc.executor';
+import type { RpcHandlerDescription } from '../handlers/interfaces/rpc-handler-description.interface';
 import { RpcRegistry } from '../handlers/rpc-handler.registry';
 import { ProcessIpcPeer } from '../sharding/process-ipc.peer';
 import { RpcShardWorker } from '../sharding/rpc-shard-worker.service';
-import type { RpcServer } from '../transport/rpc.server';
 import type { RpcFrameworkHost } from './interfaces/rpc-framework-host.interface';
 import { RpcRuntimeComposition } from './rpc-runtime.composition';
 import { SpraxiumRpcHost } from './spraxium-rpc.host';
 
 @Injectable()
 export class RpcLifecycle implements SpraxiumOnBoot, SpraxiumOnShutdown {
-  private executor?: RpcExecutor;
+  private executor?: RpcExecutor<RpcHandlerDescription>;
   private worker?: RpcShardWorker;
   private server?: RpcServer;
   private shutdownPromise?: Promise<void>;

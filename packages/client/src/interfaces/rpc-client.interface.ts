@@ -8,7 +8,7 @@ export interface RpcClient<
 > {
   /**
    * Calls a named handler and returns its decoded JSON result.
-   * @param method The name registered by the bot.
+   * @param method The name registered on the destination gateway.
    * @param input JSON data expected by the handler.
    * @param options A per-call timeout or cancellation signal.
    * @throws RpcClientError if the call fails, expires or is canceled.

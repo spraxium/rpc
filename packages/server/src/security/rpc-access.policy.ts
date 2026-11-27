@@ -1,9 +1,12 @@
 import { Code, ConnectError } from '@connectrpc/connect';
-import type { RpcHandlerDescription } from '../handlers/interfaces/rpc-handler-description.interface';
+import type { RegisteredRpcMethod } from '../handlers/interfaces/registered-rpc-method.interface';
 import type { RpcIdentity } from '../interfaces/rpc-identity.interface';
 
 export class RpcAccessPolicy {
-  static authorize(handler: RpcHandlerDescription, identity: RpcIdentity): void {
+  static authorize(
+    handler: Pick<RegisteredRpcMethod, 'allowAuthenticated' | 'permissions'>,
+    identity: RpcIdentity,
+  ): void {
     if (!handler.allowAuthenticated && !handler.permissions.length)
       throw new ConnectError('Permission denied.', Code.PermissionDenied);
 

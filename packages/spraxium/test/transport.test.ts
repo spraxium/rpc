@@ -3,15 +3,15 @@ import { createConnectTransport, Http2SessionManager } from '@connectrpc/connect
 import { logger } from '@spraxium/logger';
 import { createRpcClient } from '@spraxium/rpc-client';
 import { RpcGateway } from '@spraxium/rpc-protocol';
+import type { RpcContext } from '@spraxium/rpc-server';
+import { RpcError } from '@spraxium/rpc-server';
+import type { RpcDispatcher } from '@spraxium/rpc-server/runtime';
+import { RpcExecutor } from '@spraxium/rpc-server/runtime';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { RpcConfig } from '../src/configuration/interfaces/rpc-config.interface';
-import type { RpcDispatcher } from '../src/execution/interfaces/rpc-dispatcher.interface';
-import { RpcError } from '../src/execution/rpc.error';
-import { RpcExecutor } from '../src/execution/rpc.executor';
 import { RpcHandler } from '../src/handlers/rpc-handler.decorator';
 import { RpcRegistry } from '../src/handlers/rpc-handler.registry';
 import { RpcRuntimeComposition } from '../src/integration/rpc-runtime.composition';
-import type { RpcContext } from '../src/interfaces/rpc-context.interface';
 import { config, deferred, token } from './helpers';
 
 const cleanup: Array<() => void | Promise<void>> = [];

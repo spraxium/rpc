@@ -1,6 +1,6 @@
 # @spraxium/rpc-client
 
-Call a Spraxium bot from a Node.js backend, script, or worker. This client uses Connect by default and also supports gRPC over HTTP/2. It works with both ESM and CommonJS.
+Call a Spraxium bot or a standalone `@spraxium/rpc-server` gateway from Node.js, including from another bot provider. The client uses Connect by default and also supports gRPC over HTTP/2. It works with ESM and CommonJS.
 
 ```sh
 pnpm add @spraxium/rpc-client

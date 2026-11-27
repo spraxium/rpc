@@ -1,8 +1,7 @@
 import { Code, ConnectError } from '@connectrpc/connect';
 import { encodeJson } from '@spraxium/rpc-protocol';
-import type { ResolvedRpcConfig } from '../configuration/interfaces/resolved-rpc-config.interface';
-import type { RegisteredRpcHandler } from '../handlers/interfaces/registered-rpc-handler.interface';
-import { RpcGuildIdValidator } from '../handlers/rpc-guild-id.validator';
+import type { ResolvedRpcServerConfig } from '../configuration/interfaces/resolved-rpc-server-config.interface';
+import type { RegisteredRpcMethod } from '../handlers/interfaces/registered-rpc-method.interface';
 import type { RpcContext } from '../interfaces/rpc-context.interface';
 import { RpcError } from './rpc.error';
 import { RpcFailureMapper } from './rpc-failure.mapper';
@@ -15,11 +14,10 @@ export class RpcInvocation {
   private readonly cleanup = this.dispose.bind(this);
 
   constructor(
-    private readonly handler: RegisteredRpcHandler,
-    private input: unknown,
+    private readonly handler: RegisteredRpcMethod,
+    private readonly input: unknown,
     private readonly context: RpcContext,
-    private readonly config: ResolvedRpcConfig,
-    private readonly guildId: string | undefined,
+    private readonly config: ResolvedRpcServerConfig,
   ) {
     if (context.signal.aborted) throw RpcFailureMapper.fromCancellation(context.signal);
 
@@ -52,8 +50,8 @@ export class RpcInvocation {
   private async execute(): Promise<Uint8Array> {
     if (this.controller.signal.aborted) throw RpcFailureMapper.fromCancellation(this.controller.signal);
 
-    this.validateArguments();
-    const result = await this.executeHandler();
+    const run = this.handler.prepare(this.input);
+    const result = await this.executeHandler(run);
 
     if (this.controller.signal.aborted) throw RpcFailureMapper.fromCancellation(this.controller.signal);
 
@@ -73,19 +71,9 @@ export class RpcInvocation {
     }
   }
 
-  private validateArguments(): void {
-    if (!this.handler.schema) return;
-
-    this.input = RpcSchemaValidator.parse(this.handler.schema, this.input, false);
-
-    if (this.handler.routing === 'guild' && RpcGuildIdValidator.read(this.input) !== this.guildId) {
-      throw new ConnectError('RPC schema changed guildId.', Code.InvalidArgument);
-    }
-  }
-
-  private async executeHandler(): Promise<unknown> {
+  private async executeHandler(run: (context: RpcContext) => unknown): Promise<unknown> {
     try {
-      return await this.handler.execute(this.input, { ...this.context, signal: this.controller.signal });
+      return await run({ ...this.context, signal: this.controller.signal });
     } catch (error) {
       if (this.controller.signal.aborted) throw RpcFailureMapper.fromCancellation(this.controller.signal);
       if (error instanceof RpcError) throw new ConnectError(error.message, error.code);

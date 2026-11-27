@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.10.1
+
+A Spraxium bot can now start a call to your backend too. For example, the dashboard can still ask the bot for a server's member count. When someone runs `/ticket`, the bot can ask the backend to create the ticket and use the ID it gets back in its Discord reply.
+
+The backend receives those calls with `@spraxium/rpc-server`. The new package runs in any supported Node.js app, including NestJS, Express, Fastify and Hono on Node. Both directions use the same client and the same v1 protocol. Give each gateway its own credential and register the methods that application owns.
+
+Existing bot handlers, sharding and the NestJS-to-bot setup keep working. You can add the second gateway when you need it. The example runs both directions and shows where to initialize and close the clients and the gateway.
+
+[NestJS example](examples/nestjs) · [Server README](packages/server) · [Two-way guide](https://spraxium.com/en/guide/rpc-nestjs-two-way)
+
 ## 0.10.0
 
 This is the first npm release of Spraxium RPC. A backend can call a named provider method inside a Discord bot and get a JSON response. The bot handles Discord and the backend keeps its web routes, sessions and public URLs.

@@ -1,5 +1,6 @@
 import { Code, ConnectError } from '@connectrpc/connect';
-import type { RpcDispatcher } from '../execution/interfaces/rpc-dispatcher.interface';
+import type { RpcDispatcher } from '@spraxium/rpc-server/runtime';
+import type { RpcHandlerDescription } from '../handlers/interfaces/rpc-handler-description.interface';
 import type { RpcIpcPeer } from './interfaces/rpc-ipc-peer.interface';
 import { RPC_IPC } from './rpc-ipc.constant';
 import { RpcIpcValidator } from './rpc-ipc.validator';
@@ -17,7 +18,7 @@ export class RpcShardWorker {
 
   constructor(
     private readonly peer: RpcIpcPeer,
-    private readonly executor: RpcDispatcher,
+    private readonly executor: RpcDispatcher<RpcHandlerDescription>,
     private readonly maxPayloadBytes: number,
   ) {
     peer.on('message', this.listener);

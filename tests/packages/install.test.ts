@@ -17,7 +17,7 @@ async function pnpm(args: Array<string>, cwd: string) {
     : execute(cli, args, { cwd });
 }
 
-it('installs the packed SDK without Discord and loads the same ESM/CommonJS implementation', async () => {
+it('installs the packed SDK and server without Discord and calls the gateway from ESM', async () => {
   const repository = fileURLToPath(new URL('../../', import.meta.url));
   const temporary = await realpath(tmpdir());
   const directory = await mkdtemp(path.join(temporary, 'spraxium-rpc-package-'));
@@ -31,7 +31,7 @@ it('installs the packed SDK without Discord and loads the same ESM/CommonJS impl
     await mkdir(application);
     const packages: Record<string, string> = {};
 
-    for (const name of ['protocol', 'client']) {
+    for (const name of ['protocol', 'client', 'server']) {
       const manifest: { name: string; version: string } = JSON.parse(
         await readFile(path.join(repository, 'packages', name, 'package.json'), 'utf8'),
       );
@@ -45,7 +45,10 @@ it('installs the packed SDK without Discord and loads the same ESM/CommonJS impl
       JSON.stringify({
         private: true,
         type: 'module',
-        dependencies: { '@spraxium/rpc-client': packages['@spraxium/rpc-client'] },
+        dependencies: {
+          '@spraxium/rpc-client': packages['@spraxium/rpc-client'],
+          '@spraxium/rpc-server': packages['@spraxium/rpc-server'],
+        },
       }),
     );
     await writeFile(
@@ -68,6 +71,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { createRpcClient, RpcClientError } from '@spraxium/rpc-client';
+import { createRpcServer } from '@spraxium/rpc-server';
 const require = createRequire(import.meta.url);
 const cjs = require('@spraxium/rpc-client');
 const sdkRequire = createRequire(import.meta.resolve('@spraxium/rpc-client'));
@@ -75,8 +79,22 @@ const schema = sdkRequire.resolve('@spraxium/rpc-protocol/proto/spraxium/rpc/v1/
 assert.equal(readFileSync(schema, 'utf8'), readFileSync(process.argv[2], 'utf8'));
 assert.equal(cjs.createRpcClient, createRpcClient);
 assert.equal(cjs.RpcClientError, RpcClientError);
-const rpc = createRpcClient({ url: 'http://127.0.0.1:1', token: 'test-credential-with-more-than-32-characters' });
-rpc.close();
+assert.equal(require('@spraxium/rpc-server').createRpcServer, createRpcServer);
+const token = 'test-credential-with-more-than-32-characters';
+const gateway = createRpcServer({ port: 0, token });
+gateway.register('status', {
+  allowAuthenticated: true,
+  schema: { parse: (value) => value },
+  handle: () => ({ ready: true }),
+});
+await gateway.start();
+const rpc = createRpcClient({ url: gateway.address, token });
+try {
+  assert.deepEqual(await rpc.call('status', null), { ready: true });
+} finally {
+  rpc.close();
+  await gateway.close();
+}
 `,
     );
     await execute(

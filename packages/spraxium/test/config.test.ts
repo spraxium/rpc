@@ -1,11 +1,11 @@
 import { ConfigStore, ParentHookRegistry } from '@spraxium/core';
+import { RpcServer } from '@spraxium/rpc-server/runtime';
 import { describe, expect, it, vi } from 'vitest';
 import { defineRpc } from '../src/configuration/rpc.config';
 import { RpcConfigResolver } from '../src/configuration/rpc-config.resolver';
 import { RpcRegistry } from '../src/handlers/rpc-handler.registry';
 import { RpcLifecycle } from '../src/integration/rpc.lifecycle';
 import { SpraxiumRpcHost } from '../src/integration/spraxium-rpc.host';
-import { RpcServer } from '../src/transport/rpc.server';
 import { config, token } from './helpers';
 
 describe('secure configuration', () => {

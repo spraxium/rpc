@@ -16,7 +16,8 @@
     "discord.js": "catalog:",
     "reflect-metadata": "catalog:",
     "zod": "^4.6.6",
-    "@spraxium/rpc-example-shared": "workspace:*"
+    "@spraxium/rpc-example-shared": "workspace:*",
+    "@spraxium/rpc-client": "workspace:*"
   },
   "engines": {
     "node": ">=22.23.2 <27"

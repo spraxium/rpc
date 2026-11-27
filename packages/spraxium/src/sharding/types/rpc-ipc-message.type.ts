@@ -1,6 +1,6 @@
 import type { Code } from '@connectrpc/connect';
+import type { RpcIdentity } from '@spraxium/rpc-server';
 import type { RpcHandlerDescription } from '../../handlers/interfaces/rpc-handler-description.interface';
-import type { RpcIdentity } from '../../interfaces/rpc-identity.interface';
 import type { RPC_IPC } from '../rpc-ipc.constant';
 
 export type RpcIpcMessage =

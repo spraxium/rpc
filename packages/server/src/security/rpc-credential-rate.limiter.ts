@@ -1,5 +1,5 @@
 import { Code, ConnectError } from '@connectrpc/connect';
-import type { ResolvedRpcConfig } from '../configuration/interfaces/resolved-rpc-config.interface';
+import type { ResolvedRpcServerConfig } from '../configuration/interfaces/resolved-rpc-server-config.interface';
 import type { RpcIdentity } from '../interfaces/rpc-identity.interface';
 import type { RpcRateLimiter } from './interfaces/rpc-rate-limiter.interface';
 import type { RpcRateWindow } from './interfaces/rpc-rate-window.interface';
@@ -7,7 +7,7 @@ import type { RpcRateWindow } from './interfaces/rpc-rate-window.interface';
 export class RpcCredentialRateLimiter implements RpcRateLimiter {
   private readonly windows = new Map<string, RpcRateWindow>();
 
-  constructor(private readonly config: ResolvedRpcConfig) {}
+  constructor(private readonly config: ResolvedRpcServerConfig) {}
 
   check(identity: RpcIdentity): void {
     const now = Date.now();

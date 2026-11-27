@@ -3,14 +3,14 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
+import { RpcError } from '@spraxium/rpc-server';
+import type { RpcServer } from '@spraxium/rpc-server/runtime';
+import { RpcExecutor } from '@spraxium/rpc-server/runtime';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { Code } from '../../packages/client/src';
-import { RpcError } from '../../packages/spraxium/src/execution/rpc.error';
-import { RpcExecutor } from '../../packages/spraxium/src/execution/rpc.executor';
 import { RpcHandler } from '../../packages/spraxium/src/handlers/rpc-handler.decorator';
 import { RpcRegistry } from '../../packages/spraxium/src/handlers/rpc-handler.registry';
 import { RpcRuntimeComposition } from '../../packages/spraxium/src/integration/rpc-runtime.composition';
-import type { RpcServer } from '../../packages/spraxium/src/transport/rpc.server';
 import { config, token } from '../../packages/spraxium/test/helpers';
 import { HttpExampleProcess } from './http-example.process';
 
@@ -94,4 +94,46 @@ describe('standalone clients', () => {
 
     expect(JSON.parse(result.stdout)).toEqual(expected);
   });
+});
+
+it('runs the NestJS gateway and bot client while Nest can still call the bot', async () => {
+  if (!plain.address) throw new Error('Missing bot RPC address.');
+  const nestToken = 'test-nest-credential-with-more-than-32-characters';
+  const nest = await HttpExampleProcess.start(applications.nestjs, plain.address, token, {
+    NEST_RPC_HOST: '127.0.0.1',
+    NEST_RPC_PORT: '0',
+    NEST_RPC_TOKEN: nestToken,
+  });
+
+  try {
+    expect(await (await nest.request('4194304')).json()).toEqual(expected);
+    if (!nest.rpcAddress) throw new Error('NestJS RPC gateway did not start.');
+
+    const result = await execute(
+      process.execPath,
+      [
+        '--input-type=module',
+        '-e',
+        `
+import 'reflect-metadata';
+import { TicketsBackendService } from './dist/src/tickets-backend.service.js';
+
+const tickets = new TicketsBackendService();
+try {
+  const result = await tickets.openTicket('123456789012345678', '234567890123456789');
+  console.log(JSON.stringify(result));
+} finally {
+  await tickets.onShutdown();
+}
+`,
+      ],
+      {
+        cwd: path.join(repository, 'examples', 'bot'),
+        env: { ...process.env, NEST_RPC_URL: nest.rpcAddress, NEST_RPC_TOKEN: nestToken },
+      },
+    );
+    expect(JSON.parse(result.stdout)).toEqual({ ticketId: expect.stringMatching(/^[0-9a-f-]{36}$/) });
+  } finally {
+    await nest.stop();
+  }
 });

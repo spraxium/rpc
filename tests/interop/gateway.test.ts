@@ -1,10 +1,10 @@
+import type { RpcServer } from '@spraxium/rpc-server/runtime';
+import { RpcExecutor } from '@spraxium/rpc-server/runtime';
 import { afterEach, describe, expect, it } from 'vitest';
 import { Code, createRpcClient } from '../../packages/client/src';
-import { RpcExecutor } from '../../packages/spraxium/src/execution/rpc.executor';
 import { RpcHandler } from '../../packages/spraxium/src/handlers/rpc-handler.decorator';
 import { RpcRegistry } from '../../packages/spraxium/src/handlers/rpc-handler.registry';
 import { RpcRuntimeComposition } from '../../packages/spraxium/src/integration/rpc-runtime.composition';
-import type { RpcServer } from '../../packages/spraxium/src/transport/rpc.server';
 import { config, token } from '../../packages/spraxium/test/helpers';
 
 let server: RpcServer | undefined;

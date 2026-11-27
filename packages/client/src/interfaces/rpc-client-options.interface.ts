@@ -2,7 +2,7 @@ export interface RpcClientOptions {
   /** Gateway base URL. Remote connections normally require HTTPS. */
   url: string;
 
-  /** Service credential configured by the bot. Keep it on the server. */
+  /** Credential configured on the destination gateway. Keep it in the calling service. */
   token: string;
 
   /** Default deadline in milliseconds. Defaults to 10,000. */

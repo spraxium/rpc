@@ -4,6 +4,7 @@ import type { RpcArgumentSchema } from '../handlers/interfaces/rpc-argument-sche
 export class RpcSchemaValidator {
   static parse(schema: RpcArgumentSchema, value: unknown, response: boolean): unknown {
     let parsed: unknown;
+
     try {
       parsed = schema.parse(value);
     } catch {
@@ -21,6 +22,7 @@ export class RpcSchemaValidator {
       void Promise.resolve(parsed).catch(() => undefined);
       throw new ConnectError('RPC schemas must be synchronous.', Code.Internal);
     }
+
     return parsed;
   }
 }

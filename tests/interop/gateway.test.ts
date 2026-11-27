@@ -8,6 +8,7 @@ import type { RpcServer } from '../../packages/spraxium/src/transport/rpc.server
 import { config, token } from '../../packages/spraxium/test/helpers';
 
 let server: RpcServer | undefined;
+
 afterEach(async () => server?.close());
 
 class GuildHandler {
@@ -23,8 +24,11 @@ async function invoke(credential: string) {
   const options = config();
   server = RpcRuntimeComposition.createServer(options, new RpcExecutor(registry, options));
   await server.start();
+
   if (!server.address) throw new Error('No gateway address.');
+
   const client = createRpcClient({ url: server.address, token: credential, protocol: 'grpc' });
+
   try {
     return await client.call('guild.stats', { guildId: '4194304' });
   } finally {

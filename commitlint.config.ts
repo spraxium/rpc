@@ -29,12 +29,14 @@ const config: UserConfig = {
       rules: {
         'header-match-plan': (parsed) => {
           const { emoji } = parsed;
+
           if (!emoji) {
             return [
               false,
               'Commit must start with an emoji from the allowed list! Ex: ✨ feat(scope): subject',
             ];
           }
+
           return [true];
         },
       },

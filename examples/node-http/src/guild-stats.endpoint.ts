@@ -9,6 +9,7 @@ export class GuildStatsEndpoint {
   async handle(request: IncomingMessage, response: ServerResponse): Promise<void> {
     const pathname = request.url?.split('?')[0] ?? '';
     const route = /^\/guilds\/([^/]+)\/stats$/.exec(pathname);
+
     if (request.method !== 'GET' || !route) {
       this.#send(response, 404, { error: 'Route not found' });
       return;
@@ -40,6 +41,7 @@ export class GuildStatsEndpoint {
 
   #send(response: ServerResponse, status: number, body: unknown): void {
     if (response.destroyed) return;
+
     response.writeHead(status, { 'content-type': 'application/json; charset=utf-8' });
     response.end(JSON.stringify(body));
   }

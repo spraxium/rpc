@@ -16,6 +16,7 @@ export class RpcHandlerMetadataStore {
       throw new Error(`RPC ${name} must decorate an instance method.`);
     if (Reflect.hasOwnMetadata(RPC_HANDLER_METADATA, target, key))
       throw new Error(`RPC method ${String(key)} is already decorated.`);
+
     Reflect.defineMetadata(
       RPC_HANDLER_METADATA,
       { name, ...options, permissions: [...(options.permissions ?? [])] },
@@ -30,7 +31,9 @@ export class RpcHandlerMetadataStore {
       target,
       key,
     );
+
     if (metadata) RpcHandlerOptionsValidator.validate(metadata.name, metadata);
+
     return metadata;
   }
 }

@@ -10,6 +10,7 @@ export class RpcGuildIdValidator {
     ) {
       throw new ConnectError('A valid guildId string is required.', Code.InvalidArgument);
     }
+
     return guildId;
   }
 }

@@ -9,6 +9,7 @@ export class RpcClientConfigResolver {
     if (typeof options.url !== 'string' || !URL.canParse(options.url)) {
       throw new Error('Invalid RPC URL.');
     }
+
     const url = new URL(options.url);
     if (
       !['https:', 'http:'].includes(url.protocol) ||

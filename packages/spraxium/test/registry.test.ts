@@ -8,6 +8,7 @@ describe('RPC handler discovery', () => {
     class GuildService {
       readonly members = 42;
     }
+
     class Handler {
       constructor(readonly guilds: GuildService) {}
 
@@ -25,10 +26,12 @@ describe('RPC handler discovery', () => {
         return 'private';
       }
     }
+
     const guilds = new GuildService();
     const instance = new Handler(guilds);
     const registry = new RpcRegistry();
     registry.scan(instance);
+
     expect(registry.descriptions().map((entry) => entry.name)).toEqual(['guild.stats', 'status']);
     expect(
       registry.get('guild.stats').execute(
@@ -43,7 +46,9 @@ describe('RPC handler discovery', () => {
     ).toEqual({ members: 42 });
     expect(instance.guilds).toBe(guilds);
     expect(() => registry.get('internal')).toThrow('not found');
+
     registry.scan(instance);
+
     expect(registry.descriptions()).toHaveLength(2);
   });
 
@@ -54,8 +59,10 @@ describe('RPC handler discovery', () => {
         return null;
       }
     }
+
     const registry = new RpcRegistry();
     registry.scan(new First());
+
     expect(() => registry.scan(new First())).toThrow('Duplicate RPC handler: duplicate');
   });
 
@@ -79,17 +86,23 @@ describe('RPC handler discovery', () => {
         return 1;
       }
     }
+
     class Inherited extends Base {}
+
     class Overridden extends Base {
       override method() {
         return 2;
       }
     }
+
     const registry = new RpcRegistry();
     registry.scan(new Inherited());
+
     expect(registry.descriptions()).toHaveLength(1);
+
     const overridden = new RpcRegistry();
     overridden.scan(new Overridden());
+
     expect(overridden.descriptions()).toHaveLength(0);
   });
 });

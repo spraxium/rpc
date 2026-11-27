@@ -27,6 +27,7 @@ export class GuildRpcService {
   stats({ guildId }: z.infer<typeof guildInput>): BotRpcContract['guild.stats']['output'] {
     const stats = this.guilds.findStats(guildId);
     if (!stats) throw new RpcError('Guild not found.', Code.NotFound);
+
     return stats;
   }
 }

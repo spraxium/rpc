@@ -11,6 +11,7 @@ async function main(): Promise<void> {
     allowInsecure: process.env.SPRAXIUM_RPC_PRIVATE_NETWORK === 'true',
     timeoutMs: 3000,
   });
+
   try {
     const stats = await rpc.call('guild.stats', { guildId });
     console.log(JSON.stringify(stats));
@@ -25,5 +26,6 @@ main().catch((error) => {
   } else {
     console.error(error instanceof Error ? error.message : 'Pass a guild ID to pnpm example:commonjs.');
   }
+
   process.exitCode = 1;
 });

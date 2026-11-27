@@ -34,6 +34,7 @@ class TestShard extends EventEmitter {
 
   async send(message: RpcIpcMessage) {
     if (this.failSend) throw new Error('IPC failed');
+
     this.sent.push(message);
     this.child.emit('message', JSON.parse(JSON.stringify(message)));
   }
@@ -49,6 +50,7 @@ function context(timeoutMs = 1000): RpcContext {
 }
 
 const cleanup: Array<() => Promise<void>> = [];
+
 afterEach(async () => {
   for (const close of cleanup.splice(0).reverse()) await close();
 });
@@ -56,10 +58,12 @@ afterEach(async () => {
 async function createShards() {
   const shards = new Map<number, TestShard>();
   const calls = [0, 0];
+
   for (const id of [0, 1]) {
     class ShardService {
       constructor(readonly id: number) {}
     }
+
     class Handler {
       constructor(readonly service: ShardService) {}
 
@@ -74,6 +78,7 @@ async function createShards() {
         return { shardId: this.service.id };
       }
     }
+
     const shard = new TestShard(id);
     shards.set(id, shard);
     const registry = new RpcRegistry();
@@ -82,9 +87,11 @@ async function createShards() {
     await worker.markReady();
     cleanup.push(() => worker.close(0));
   }
+
   const dispatcher = new RpcShardDispatcher(shards, 2, config());
   await dispatcher.start();
   cleanup.push(() => dispatcher.close(0));
+
   return { dispatcher, shards, calls };
 }
 
@@ -99,6 +106,7 @@ describe('explicit shard request-response IPC', () => {
       },
     };
     const worker = new RpcShardWorker(shard.peer, executor, 1024);
+
     expect(shard.child.listenerCount('message')).toBe(1);
     await expect(worker.close(0)).rejects.toThrow('Executor shutdown failed');
     expect(shard.child.listenerCount('message')).toBe(0);
@@ -108,13 +116,17 @@ describe('explicit shard request-response IPC', () => {
     const { dispatcher, shards } = await createShards();
     const shard = shards.get(1);
     if (!shard) throw new Error('Missing shard');
+
     const payload = encodeJson({ guildId: '4194304' }, 1024);
     shard.emit('death');
+
     await expect(dispatcher.invoke('guild.stats', payload, context())).rejects.toMatchObject({
       code: Code.Unavailable,
     });
+
     shard.emit('ready');
     await new Promise<void>((resolve) => setImmediate(resolve));
+
     expect(decodeJson(await dispatcher.invoke('guild.stats', payload, context()), 1024)).toEqual({
       shardId: 1,
     });
@@ -129,6 +141,7 @@ describe('explicit shard request-response IPC', () => {
     shard.emit('disconnect');
     await new Promise<void>((resolve) => setImmediate(resolve));
     const payload = encodeJson({ guildId: '4194304' }, 1024);
+
     await expect(dispatcher.invoke('guild.stats', payload, context())).rejects.toMatchObject({
       code: Code.Unavailable,
     });
@@ -137,6 +150,7 @@ describe('explicit shard request-response IPC', () => {
   it('routes guilds using the actual Discord formula and executes only once in the destination container', async () => {
     const { dispatcher, shards, calls } = await createShards();
     const payload = encodeJson({ guildId: '4194304' }, 1024);
+
     expect(decodeJson(await dispatcher.invoke('guild.stats', payload, context()), 1024)).toEqual({
       shardId: 1,
     });
@@ -150,6 +164,7 @@ describe('explicit shard request-response IPC', () => {
 
   it('rejects unregistered, unauthorized and invalid guild calls before dispatch', async () => {
     const { dispatcher } = await createShards();
+
     await expect(dispatcher.invoke('missing', encodeJson(null, 1024), context())).rejects.toMatchObject({
       code: Code.NotFound,
     });
@@ -168,21 +183,27 @@ describe('explicit shard request-response IPC', () => {
     const { dispatcher, shards } = await createShards();
     const shard = shards.get(1);
     if (!shard) throw new Error('Missing shard');
+
     const payload = encodeJson({ guildId: '4194304' }, 1024);
     shard.ready = false;
+
     await expect(dispatcher.invoke('guild.stats', payload, context())).rejects.toMatchObject({
       code: Code.Unavailable,
     });
+
     shard.ready = true;
     shard.failSend = true;
+
     await expect(dispatcher.invoke('guild.stats', payload, context())).rejects.toMatchObject({
       code: Code.Unavailable,
     });
     expect(dispatcher.pendingCount).toBe(0);
+
     shard.failSend = false;
     shard.child.removeAllListeners('message');
     const pending = dispatcher.invoke('guild.stats', payload, context());
     shard.emit('death');
+
     await expect(pending).rejects.toMatchObject({ code: Code.Unavailable });
     expect(dispatcher.pendingCount).toBe(0);
   });
@@ -191,17 +212,23 @@ describe('explicit shard request-response IPC', () => {
     const { dispatcher, shards } = await createShards();
     const shard = shards.get(1);
     if (!shard) throw new Error('Missing shard');
+
     shard.child.removeAllListeners('message');
     const payload = encodeJson({ guildId: '4194304' }, 1024);
+
     await expect(dispatcher.invoke('guild.stats', payload, context(20))).rejects.toMatchObject({
       code: Code.DeadlineExceeded,
     });
+
     const controller = new AbortController();
     const pending = dispatcher.invoke('guild.stats', payload, { ...context(), signal: controller.signal });
     controller.abort();
+
     await expect(pending).rejects.toMatchObject({ code: Code.Canceled });
+
     const closing = dispatcher.invoke('guild.stats', payload, context());
     await dispatcher.close(0);
+
     await expect(closing).rejects.toMatchObject({ code: Code.Unavailable });
     expect(dispatcher.pendingCount).toBe(0);
     expect(shard.listenerCount('message')).toBe(0);
@@ -211,6 +238,7 @@ describe('explicit shard request-response IPC', () => {
   it('ignores duplicate in-flight IDs and rejects inconsistent shard manifests', async () => {
     const release = deferred<null>();
     let count = 0;
+
     class Slow {
       @RpcHandler('slow', { routing: 'singleton', allowAuthenticated: true })
       slow() {
@@ -218,6 +246,7 @@ describe('explicit shard request-response IPC', () => {
         return release.promise;
       }
     }
+
     const shard = new TestShard(0);
     const registry = new RpcRegistry();
     registry.scan(new Slow());
@@ -236,13 +265,17 @@ describe('explicit shard request-response IPC', () => {
     await shard.send(message);
     await shard.send(message);
     await Promise.resolve();
+
     expect(count).toBe(1);
+
     const completed = once(shard, 'message');
     release.resolve(null);
     await completed;
     await shard.send(message);
     await Promise.resolve();
+
     expect(count).toBe(1);
+
     const second = new TestShard(1);
     const emptyWorker = new RpcShardWorker(second.peer, new RpcExecutor(new RpcRegistry(), config()), 1024);
     await emptyWorker.markReady();
@@ -255,6 +288,7 @@ describe('explicit shard request-response IPC', () => {
       2,
       config(),
     );
+
     await expect(dispatcher.start()).rejects.toThrow('manifest differs');
     expect(shard.listenerCount('message')).toBe(0);
   });

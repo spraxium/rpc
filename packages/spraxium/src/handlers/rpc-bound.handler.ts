@@ -17,6 +17,7 @@ export class RpcBoundHandler implements RegisteredRpcHandler {
     private readonly method: unknown,
   ) {
     if (typeof method !== 'function') throw new Error(`RPC ${metadata.name} is not a method.`);
+
     this.name = metadata.name;
     this.routing = metadata.routing;
     this.permissions = [...(metadata.permissions ?? [])];

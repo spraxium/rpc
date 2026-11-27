@@ -14,6 +14,7 @@ describe('secure configuration', () => {
     const shutdown = vi.fn();
     const restore = Object.getOwnPropertyDescriptor(ParentHookRegistry, 'onShutdown');
     Object.defineProperty(ParentHookRegistry, 'onShutdown', { value: shutdown, configurable: true });
+
     try {
       for (const plugins of [[], [defineRpc({ enabled: false, auth: { tokens: [] } })]]) {
         ConfigStore.load({ plugins });
@@ -22,10 +23,12 @@ describe('secure configuration', () => {
         await lifecycle.onApplicationReady();
         await lifecycle.onShutdown();
       }
+
       expect(start).not.toHaveBeenCalled();
     } finally {
       start.mockRestore();
       ConfigStore.reset();
+
       if (restore) Object.defineProperty(ParentHookRegistry, 'onShutdown', restore);
       else Reflect.deleteProperty(ParentHookRegistry, 'onShutdown');
     }
@@ -72,6 +75,7 @@ describe('secure configuration', () => {
 
   it('supports a single token with explicit permissions and bounded defaults', () => {
     const resolver = new RpcConfigResolver();
+
     expect(resolver.resolve({ token, permissions: ['guild:read'] })).toMatchObject({
       enabled: true,
       host: '127.0.0.1',

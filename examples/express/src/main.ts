@@ -16,4 +16,5 @@ app.use('/guilds', createGuildRouter(rpc));
 app.use(rpcErrorMiddleware);
 
 const server = app.listen(port, host);
+
 await new HttpServerLifecycle(server, rpc).ready();

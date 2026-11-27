@@ -7,7 +7,9 @@ import { SpraxiumRpcHost } from './spraxium-rpc.host';
 const host = new SpraxiumRpcHost();
 const resolver = new RpcConfigResolver();
 const parent = new RpcParentGateway(host, resolver);
+
 host.registerParent(parent.start.bind(parent));
+
 export const rpcIntegration: RpcModuleIntegration = {
   name: 'rpc',
   setup: (context) => new RpcModuleLifecycle(context.container),

@@ -41,5 +41,6 @@ console.log('Bot providers verified.');
     ],
     { cwd: fileURLToPath(new URL('../../examples/bot/', import.meta.url)) },
   );
+
   expect(result.stdout).toContain('Bot providers verified.');
 });

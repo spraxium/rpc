@@ -12,12 +12,15 @@ export class RpcCredentialRateLimiter implements RpcRateLimiter {
   check(identity: RpcIdentity): void {
     const now = Date.now();
     let window = this.windows.get(identity.id);
+
     if (!window || now - window.start >= this.config.rateLimit.windowMs) {
       window = { start: now, count: 0 };
       this.windows.set(identity.id, window);
     }
+
     if (window.count >= this.config.rateLimit.maxRequests)
       throw new ConnectError('RPC rate limit exceeded.', Code.ResourceExhausted);
+
     window.count++;
   }
 }

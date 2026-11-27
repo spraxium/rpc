@@ -23,6 +23,7 @@ export class BotRpcService implements OnApplicationShutdown {
       if (!(error instanceof RpcClientError)) throw error;
       if (error.code === Code.InvalidArgument) throw new BadRequestException('Invalid guild ID');
       if (error.code === Code.NotFound) throw new NotFoundException('Guild not found');
+
       throw new ServiceUnavailableException('Bot unavailable');
     }
   }

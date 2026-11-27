@@ -9,10 +9,12 @@ import type { RpcIpcMessage } from '../src/sharding/types/rpc-ipc-message.type';
 import { config, token } from './helpers';
 
 const children: Array<ChildProcess> = [];
+
 afterEach(async () => {
   await Promise.all(
     children.splice(0).map(async (child) => {
       if (child.exitCode !== null) return;
+
       const exited = once(child, 'exit');
       child.send({ kind: 'test-stop' });
       const timer = setTimeout(() => child.kill(), 2000);
@@ -24,8 +26,10 @@ afterEach(async () => {
 
 async function boot(shardId?: number) {
   const env = { ...process.env };
+
   if (shardId === undefined) env.SHARDS = undefined;
   else env.SHARDS = String(shardId);
+
   const child = fork(
     process.env.RPC_FRAMEWORK_FIXTURE ?? fileURLToPath(new URL('./fixtures/bot.mjs', import.meta.url)),
     [],
@@ -62,6 +66,7 @@ async function boot(shardId?: number) {
     child.on('message', ready);
     child.once('exit', exited);
   });
+
   return { child, url: output.match(/http:\/\/127\.0\.0\.1:\d+/)?.[0] };
 }
 
@@ -87,10 +92,14 @@ class ProcessShard extends EventEmitter {
 describe('independent processes using built package imports', () => {
   it('calls a provider with imported constructor dependencies across a real TCP connection', async () => {
     const { url, child } = await boot();
+
     if (!url) throw new Error('No RPC listener address');
+
     const client = createRpcClient({ url, token });
+
     try {
       const result = await client.call('guild.stats', { guildId: '4194304' });
+
       expect(result).toEqual({ members: 42, shardId: 0, pid: child.pid });
       expect(child.pid).not.toBe(process.pid);
     } finally {
@@ -110,8 +119,11 @@ describe('independent processes using built package imports', () => {
     await dispatcher.start();
     const server = RpcRuntimeComposition.createServer(options, dispatcher);
     await server.start();
+
     if (!server.address) throw new Error('No RPC listener address');
+
     const client = createRpcClient({ url: server.address, token });
+
     try {
       expect(await client.call('guild.stats', { guildId: '4194304' })).toEqual({
         members: 42,

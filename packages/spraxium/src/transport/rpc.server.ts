@@ -42,12 +42,14 @@ export class RpcServer {
   get address(): string | undefined {
     const address = this.server?.address();
     if (!address || typeof address === 'string') return undefined;
+
     return `${this.config.tls ? 'https' : 'http'}://${address.family === 'IPv6' ? `[${address.address}]` : address.address}:${address.port}`;
   }
 
   async start(): Promise<void> {
     if (!this.config.enabled) return;
     if (this.server || this.stopping) throw new Error('RPC server has already been started or closed.');
+
     const adapter = connectNodeAdapter({
       routes: this.registerRoutes.bind(this),
       readMaxBytes: this.config.maxPayloadBytes * 2 + 4096,
@@ -122,14 +124,18 @@ export class RpcServer {
     let timer: ReturnType<typeof setTimeout> | undefined;
     let controller: AbortController | undefined;
     const cancel = () => controller?.abort(RpcFailureMapper.fromCancellation(context.signal));
+
     try {
       if (this.stopping) throw new ConnectError('RPC is shutting down.', Code.Unavailable);
+
       const identity = this.authenticator.authenticate(context.requestHeader.get('authorization'));
       this.rateLimiter.check(identity);
       this.validateRequest(request);
       controller = new AbortController();
       context.signal.addEventListener('abort', cancel, { once: true });
+
       if (context.signal.aborted) cancel();
+
       const timeout = Math.min(this.config.timeoutMs, context.timeoutMs() ?? this.config.timeoutMs);
       timer = setTimeout(
         () => controller?.abort(new ConnectError('RPC deadline exceeded.', Code.DeadlineExceeded)),
@@ -145,11 +151,13 @@ export class RpcServer {
         }),
         controller.signal,
       );
+
       return { payloadJson };
     } catch (error) {
       const safe =
         error instanceof ConnectError ? error : new ConnectError('RPC request failed.', Code.Internal);
       code = safe.code;
+
       throw safe;
     } finally {
       clearTimeout(timer);
@@ -168,6 +176,7 @@ export class RpcServer {
       if (!this.server?.listening) resolve();
       else this.server.close(() => resolve());
     });
+
     try {
       await this.dispatcher.close(this.config.shutdownGraceMs);
     } finally {
@@ -178,6 +187,7 @@ export class RpcServer {
   private async closeConnections(closed: Promise<void>): Promise<void> {
     for (const controller of this.active.values())
       controller.abort(new ConnectError('RPC is shutting down.', Code.Unavailable));
+
     await new Promise<void>((resolve) => setImmediate(resolve));
     for (const session of this.sessions) session.close();
     await RpcCancellation.waitForSettled([closed], 100);

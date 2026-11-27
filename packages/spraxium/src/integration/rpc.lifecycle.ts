@@ -31,9 +31,11 @@ export class RpcLifecycle implements SpraxiumOnBoot, SpraxiumOnShutdown {
     this.host.assertCompatible();
     const raw = this.host.configuration();
     if (!raw || raw.enabled === false) return;
+
     const config = this.resolver.resolve(raw);
     this.shutdownGraceMs = config.shutdownGraceMs;
     this.executor = new RpcExecutor(this.registry, config);
+
     if (this.host.isShardChild())
       this.worker = new RpcShardWorker(new ProcessIpcPeer(), this.executor, config.maxPayloadBytes);
     else this.server = RpcRuntimeComposition.createServer(config, this.executor);
@@ -41,6 +43,7 @@ export class RpcLifecycle implements SpraxiumOnBoot, SpraxiumOnShutdown {
 
   async onApplicationReady(): Promise<void> {
     if (this.shutdownPromise) return;
+
     await this.worker?.markReady();
     await this.server?.start();
   }

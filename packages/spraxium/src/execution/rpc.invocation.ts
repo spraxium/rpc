@@ -22,8 +22,10 @@ export class RpcInvocation {
     private readonly guildId: string | undefined,
   ) {
     if (context.signal.aborted) throw RpcFailureMapper.fromCancellation(context.signal);
+
     const remaining = Math.min(context.deadline.getTime() - Date.now(), config.timeoutMs);
     if (remaining <= 0) throw new ConnectError('RPC deadline exceeded.', Code.DeadlineExceeded);
+
     context.signal.addEventListener('abort', this.cancel, { once: true });
     this.timer = setTimeout(this.expire.bind(this), remaining);
     this.controller.signal.addEventListener('abort', this.cleanup, { once: true });
@@ -49,12 +51,16 @@ export class RpcInvocation {
 
   private async execute(): Promise<Uint8Array> {
     if (this.controller.signal.aborted) throw RpcFailureMapper.fromCancellation(this.controller.signal);
+
     this.validateArguments();
     const result = await this.executeHandler();
+
     if (this.controller.signal.aborted) throw RpcFailureMapper.fromCancellation(this.controller.signal);
+
     const output = this.handler.responseSchema
       ? RpcSchemaValidator.parse(this.handler.responseSchema, result, true)
       : result;
+
     try {
       return encodeJson(output, this.config.maxPayloadBytes);
     } catch (error) {
@@ -69,7 +75,9 @@ export class RpcInvocation {
 
   private validateArguments(): void {
     if (!this.handler.schema) return;
+
     this.input = RpcSchemaValidator.parse(this.handler.schema, this.input, false);
+
     if (this.handler.routing === 'guild' && RpcGuildIdValidator.read(this.input) !== this.guildId) {
       throw new ConnectError('RPC schema changed guildId.', Code.InvalidArgument);
     }
@@ -81,6 +89,7 @@ export class RpcInvocation {
     } catch (error) {
       if (this.controller.signal.aborted) throw RpcFailureMapper.fromCancellation(this.controller.signal);
       if (error instanceof RpcError) throw new ConnectError(error.message, error.code);
+
       throw new ConnectError('RPC handler failed.', Code.Internal);
     }
   }

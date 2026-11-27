@@ -14,12 +14,15 @@ app.setErrorHandler((error, request, reply) => {
   if (error instanceof Error && 'validation' in error && error.validation) {
     return reply.code(400).send({ error: 'Invalid guild ID' });
   }
+
   if (!(error instanceof RpcClientError)) {
     request.log.error(error);
     return reply.code(500).send({ error: 'Internal server error' });
   }
+
   if (error.code === Code.InvalidArgument) return reply.code(400).send({ error: 'Invalid guild ID' });
   if (error.code === Code.NotFound) return reply.code(404).send({ error: 'Guild not found' });
+
   return reply.code(503).send({ error: 'Bot unavailable' });
 });
 app.addHook('onClose', async () => rpc.close());
@@ -32,8 +35,10 @@ try {
 }
 
 let stopping = false;
+
 function stop() {
   if (stopping) return;
+
   stopping = true;
   void app.close().catch((error) => {
     app.log.error(error);

@@ -18,8 +18,10 @@ app.onError((error, context) => {
   if (!(error instanceof RpcClientError)) return context.json({ error: 'Internal server error' }, 500);
   if (error.code === Code.InvalidArgument) return context.json({ error: 'Invalid guild ID' }, 400);
   if (error.code === Code.NotFound) return context.json({ error: 'Guild not found' }, 404);
+
   return context.json({ error: 'Bot unavailable' }, 503);
 });
 
 const server = serve({ fetch: app.fetch, hostname, port });
+
 await new HttpServerLifecycle(server, rpc).ready();

@@ -11,6 +11,7 @@ const execute = promisify(execFile);
 async function pnpm(args: Array<string>, cwd: string) {
   const cli = process.env.npm_execpath;
   if (!cli) throw new Error('Run package tests through pnpm.');
+
   return /\.[cm]?js$/i.test(cli)
     ? execute(process.execPath, [cli, ...args], { cwd })
     : execute(cli, args, { cwd });
@@ -22,12 +23,14 @@ it('installs the packed SDK without Discord and loads the same ESM/CommonJS impl
   const directory = await mkdtemp(path.join(temporary, 'spraxium-rpc-package-'));
   if (path.dirname(directory) !== temporary || !path.basename(directory).startsWith('spraxium-rpc-package-'))
     throw new Error('Unexpected package test directory.');
+
   try {
     const archives = path.join(directory, 'archives');
     const application = path.join(directory, 'application');
     await mkdir(archives);
     await mkdir(application);
     const packages: Record<string, string> = {};
+
     for (const name of ['protocol', 'client']) {
       const manifest: { name: string; version: string } = JSON.parse(
         await readFile(path.join(repository, 'packages', name, 'package.json'), 'utf8'),
@@ -36,6 +39,7 @@ it('installs the packed SDK without Discord and loads the same ESM/CommonJS impl
       const filename = `${manifest.name.replace('@', '').replace('/', '-')}-${manifest.version}.tgz`;
       packages[manifest.name] = `file:${path.join(archives, filename).replaceAll('\\', '/')}`;
     }
+
     await writeFile(
       path.join(application, 'package.json'),
       JSON.stringify({
@@ -53,8 +57,10 @@ it('installs the packed SDK without Discord and loads the same ESM/CommonJS impl
     );
     await pnpm(['install', '--ignore-scripts', '--no-frozen-lockfile'], application);
     const tree = await pnpm(['list', '--prod', '--depth', 'Infinity', '--json'], application);
+
     expect(tree.stdout).not.toContain('discord.js');
     expect(tree.stdout).not.toContain('@spraxium/core');
+
     await writeFile(
       path.join(application, 'check.mjs'),
       `

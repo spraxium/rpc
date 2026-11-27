@@ -5,6 +5,7 @@ import { Code, createRpcClient } from '../src';
 describe('client and JSON contract', () => {
   it('omits an invalid URL from configuration errors', () => {
     const url = 'https://example.invalid:invalid-port';
+
     try {
       createRpcClient({ url, token: 'test' });
       throw new Error('Expected the client to reject the URL.');
@@ -33,11 +34,14 @@ describe('client and JSON contract', () => {
   it('rejects cycles, getters, symbol properties and toJSON without calling them', () => {
     const sparseWithProperty = Object.assign([1, 2], { extra: 3 });
     Reflect.deleteProperty(sparseWithProperty, '1');
+
     expect(() => encodeJson(sparseWithProperty, 1024)).toThrow('Sparse');
+
     const cycle: {
       self?: object;
     } = {};
     cycle.self = cycle;
+
     expect(() => encodeJson(cycle, 1024)).toThrow('Circular');
     expect(() =>
       encodeJson(
@@ -77,6 +81,7 @@ describe('client and JSON contract', () => {
         };
       };
     }
+
     const client = createRpcClient<Contract>({ url: 'http://127.0.0.1:1', token: 'test' });
     expectTypeOf(client.call).parameter(0).toEqualTypeOf<'guild.stats'>();
     expectTypeOf(client.call).returns.toEqualTypeOf<
@@ -89,14 +94,17 @@ describe('client and JSON contract', () => {
 
   it('rejects array subclasses without executing inherited serializers', () => {
     let calls = 0;
+
     class CustomArray extends Array<unknown> {
       toJSON() {
         calls++;
         return ['converted'];
       }
     }
+
     const input = new CustomArray();
     input.push('original');
+
     expect(() => encodeJson(input, 1024)).toThrow('plain JSON');
     expect(calls).toBe(0);
   });
@@ -105,6 +113,7 @@ describe('client and JSON contract', () => {
     const original = Object.getOwnPropertyDescriptor(Object.prototype, 'toJSON');
     let calls = 0;
     let failure: unknown;
+
     try {
       Object.defineProperty(Object.prototype, 'toJSON', {
         configurable: true,
@@ -113,6 +122,7 @@ describe('client and JSON contract', () => {
           return () => 'converted';
         },
       });
+
       try {
         encodeJson({ value: 42 }, 1024);
       } catch (error) {
@@ -122,14 +132,17 @@ describe('client and JSON contract', () => {
       if (original) Object.defineProperty(Object.prototype, 'toJSON', original);
       else Reflect.deleteProperty(Object.prototype, 'toJSON');
     }
+
     expect(failure).toBeInstanceOf(TypeError);
     expect(calls).toBe(0);
   });
 
   it('reuses the codec safely after invalid UTF-8 and preserves shared JSON subobjects', () => {
     expect(() => decodeJson(new Uint8Array([0xff]), 1024)).toThrow();
+
     const shared = Object.assign(Object.create(null), { value: 42 });
     const input = { first: shared, second: shared };
+
     expect(decodeJson(encodeJson(input, 1024), 1024)).toEqual({
       first: { value: 42 },
       second: { value: 42 },
@@ -146,9 +159,12 @@ describe('client and JSON contract', () => {
 
   it('reports an unavailable server and disallows calls after closing', async () => {
     const client = createRpcClient({ url: 'http://127.0.0.1:1', token: 'test', timeoutMs: 1000 });
+
     await expect(client.call('echo', null)).rejects.toMatchObject({ code: Code.Unavailable });
+
     client.close();
     client.close();
+
     await expect(client.call('echo', null)).rejects.toMatchObject({ code: Code.Unavailable });
   });
 
@@ -156,6 +172,7 @@ describe('client and JSON contract', () => {
     const client = createRpcClient({ url: 'http://127.0.0.1:1', token: 'test' });
     const controller = new AbortController();
     controller.abort();
+
     try {
       await expect(client.call('echo', undefined, { signal: controller.signal })).rejects.toMatchObject({
         code: Code.Canceled,

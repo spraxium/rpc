@@ -33,8 +33,10 @@ export class HttpExampleProcess {
     await once(reservation, 'listening');
     const address = reservation.address();
     if (!address || typeof address === 'string') throw new Error('No available example port.');
+
     await new Promise<void>((resolve) => reservation.close(() => resolve()));
     const instance = new HttpExampleProcess(directory, address.port, gateway, token);
+
     try {
       await instance.waitForReady();
       return instance;
@@ -52,10 +54,12 @@ export class HttpExampleProcess {
 
   async stop(): Promise<void> {
     if (this.child.exitCode !== null || this.child.signalCode !== null) return;
+
     const exited = once(this.child, 'exit');
     const timer = setTimeout(() => this.child.kill('SIGKILL'), 5000);
     timer.unref();
     this.child.kill('SIGTERM');
+
     try {
       await exited;
     } finally {
@@ -70,15 +74,19 @@ export class HttpExampleProcess {
   private async waitForReady(): Promise<void> {
     for (let attempt = 0; attempt < 200; attempt++) {
       if (this.child.exitCode !== null) throw new Error(`Example exited: ${this.output}`);
+
       try {
         const response = await this.request('4194304');
         await response.arrayBuffer();
+
         if (response.ok) return;
       } catch {
         if (this.child.exitCode !== null) throw new Error(`Example exited: ${this.output}`);
       }
+
       await wait(50);
     }
+
     throw new Error(`Example did not become ready: ${this.output}`);
   }
 }

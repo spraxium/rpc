@@ -17,4 +17,5 @@ app.use(guilds.routes());
 app.use(guilds.allowedMethods());
 
 const server = app.listen(port, host);
+
 await new HttpServerLifecycle(server, rpc).ready();

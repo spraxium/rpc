@@ -20,12 +20,16 @@ export class RpcTokenAuthenticator implements RpcAuthenticator {
   authenticate(header: string | null): RpcIdentity {
     if (!header?.startsWith('Bearer ') || header.length > 8192)
       throw new ConnectError('Authentication required.', Code.Unauthenticated);
+
     const digest = createHash('sha256').update(header.slice(7)).digest();
     let identity: RpcIdentity | undefined;
+
     for (const credential of this.credentials) {
       if (timingSafeEqual(digest, credential.digest)) identity = credential.identity;
     }
+
     if (!identity) throw new ConnectError('Authentication required.', Code.Unauthenticated);
+
     return identity;
   }
 }

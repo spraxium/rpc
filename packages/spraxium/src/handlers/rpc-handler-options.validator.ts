@@ -22,9 +22,11 @@ export class RpcHandlerOptionsValidator {
 
   private static validPermissions(value: unknown): boolean {
     if (!Array.isArray(value)) return false;
+
     for (const permission of value) {
       if (typeof permission !== 'string' || !permission.trim()) return false;
     }
+
     return true;
   }
 }

@@ -24,12 +24,14 @@ export class RpcConfigResolver {
     this.validateLimits(resolved);
     this.validateCredentials(resolved);
     this.validateTransport(resolved);
+
     return resolved;
   }
 
   private validateLimits(resolved: ResolvedRpcConfig): void {
     if (typeof resolved.enabled !== 'boolean' || typeof resolved.tlsTerminationProxy !== 'boolean')
       throw new Error('RPC enabled and tlsTerminationProxy must be booleans.');
+
     for (const [key, value] of Object.entries({
       maxPayloadBytes: resolved.maxPayloadBytes,
       timeoutMs: resolved.timeoutMs,
@@ -42,6 +44,7 @@ export class RpcConfigResolver {
         throw new Error(`RPC ${key} must be a positive integer no greater than 2147483647.`);
       }
     }
+
     if (!Number.isInteger(resolved.port) || resolved.port < 0 || resolved.port > 65535) {
       throw new Error('RPC port must be between 0 and 65535.');
     }
@@ -55,16 +58,21 @@ export class RpcConfigResolver {
     if (config.auth) {
       if (config.token !== undefined || config.permissions !== undefined)
         throw new Error('RPC accepts token/permissions or auth.tokens, not both.');
+
       return config.auth;
     }
+
     if (config.token === undefined) throw new Error('RPC requires at least one access token.');
+
     return { tokens: [{ id: 'default', value: config.token, permissions: config.permissions ?? [] }] };
   }
 
   private validateCredentials(config: ResolvedRpcConfig): void {
     const ids = new Set<string>();
     const values = new Set<string>();
+
     if (!config.auth?.tokens?.length) throw new Error('RPC requires at least one access token.');
+
     for (const token of config.auth.tokens) {
       if (!token.id || ids.has(token.id) || !/^[A-Za-z0-9._-]{1,64}$/.test(token.id)) {
         throw new Error('RPC credential IDs must be unique identifiers (1-64 characters).');
@@ -83,6 +91,7 @@ export class RpcConfigResolver {
       if (!this.validPermissions(token.permissions)) {
         throw new Error('RPC credential permissions must be an array of nonempty strings.');
       }
+
       ids.add(token.id);
       values.add(token.value);
     }
@@ -102,9 +111,11 @@ export class RpcConfigResolver {
 
   private validPermissions(value: unknown): boolean {
     if (!Array.isArray(value)) return false;
+
     for (const permission of value) {
       if (typeof permission !== 'string' || !permission.trim()) return false;
     }
+
     return true;
   }
 }

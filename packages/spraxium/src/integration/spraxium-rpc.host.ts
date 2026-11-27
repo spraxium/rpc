@@ -32,6 +32,7 @@ export class SpraxiumRpcHost implements RpcFrameworkHost {
         'Spraxium RPC requires compatible framework packages starting at 0.10.0. See https://spraxium.com/en/guide/rpc-quickstart.',
       );
     }
+
     return ParentHookRegistry.onShutdown.bind(ParentHookRegistry);
   }
 }

@@ -7,16 +7,20 @@ export const rpcErrorMiddleware: Middleware = async (context, next) => {
     await next();
   } catch (error) {
     if (!(error instanceof RpcClientError)) throw error;
+
     if (error.code === Code.InvalidArgument) {
       context.status = 400;
       context.body = { error: 'Invalid guild ID' };
+
       return;
     }
     if (error.code === Code.NotFound) {
       context.status = 404;
       context.body = { error: 'Guild not found' };
+
       return;
     }
+
     context.status = 503;
     context.body = { error: 'Bot unavailable' };
   }

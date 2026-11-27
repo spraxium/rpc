@@ -25,14 +25,17 @@ class ExampleHandlers {
   stats(input: { guildId: string }): unknown {
     if (input.guildId === '12582912') throw new Error('Private failure details');
     if (input.guildId !== '4194304') throw new RpcError('Guild not found.', Code.NotFound);
+
     return expected;
   }
 }
 
 beforeAll(async () => {
   applications = {};
+
   for (const name of ['hono', 'nestjs', 'fastify', 'express', 'koa', 'node-http', 'node-client'])
     applications[name] = path.join(repository, 'examples', name);
+
   const registry = new RpcRegistry();
   registry.scan(new ExampleHandlers());
   const options = config({ rateLimit: { maxRequests: 1000, windowMs: 60000 } });
@@ -49,23 +52,30 @@ describe('independent HTTP backends', () => {
     '%s maps success and RPC failures through a real gateway',
     async (name) => {
       if (!plain.address) throw new Error('Missing RPC address.');
+
       const instance = await HttpExampleProcess.start(applications[name], plain.address, token);
+
       try {
         const success = await instance.request('4194304');
+
         expect(success.status).toBe(200);
         expect(await success.json()).toEqual(expected);
+
         for (const [guildId, status] of [
           ['invalid', 400],
           ['8388608', 404],
           ['12582912', 503],
         ]) {
           const response = await instance.request(String(guildId));
+
           expect(response.status).toBe(status);
           expect(await response.text()).not.toContain('Private failure details');
         }
+
         const manifest: { dependencies: Record<string, string> } = JSON.parse(
           await readFile(path.join(applications[name], 'package.json'), 'utf8'),
         );
+
         expect(manifest.dependencies['discord.js']).toBeUndefined();
         expect(manifest.dependencies['@spraxium/core']).toBeUndefined();
       } finally {
@@ -81,6 +91,7 @@ describe('standalone clients', () => {
       cwd: applications['node-client'],
       env: { ...process.env, SPRAXIUM_RPC_URL: plain.address, SPRAXIUM_RPC_TOKEN: token },
     });
+
     expect(JSON.parse(result.stdout)).toEqual(expected);
   });
 });

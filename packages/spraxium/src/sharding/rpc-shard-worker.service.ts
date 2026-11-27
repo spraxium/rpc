@@ -31,11 +31,13 @@ export class RpcShardWorker {
 
   async close(graceMs: number): Promise<void> {
     this.stopping = true;
+
     try {
       await this.executor.close(graceMs);
     } finally {
       for (const controller of this.active.values())
         controller.abort(new ConnectError('RPC shard is shutting down.', Code.Unavailable));
+
       this.active.clear();
       this.history.clear();
       this.describeRequests.clear();
@@ -49,12 +51,16 @@ export class RpcShardWorker {
 
   private async receive(value: unknown): Promise<void> {
     if (!RpcIpcValidator.isMessage(value)) return;
+
     if (value.kind === 'cancel') {
       this.active.get(value.id)?.abort(new ConnectError('RPC call canceled.', Code.Canceled));
       this.describeRequests.delete(value.id);
+
       return;
     }
+
     if (value.kind !== 'describe' && value.kind !== 'invoke') return;
+
     if (this.stopping || (value.kind === 'invoke' && !this.ready)) {
       await this.sendFailure(value.id, Code.Unavailable, 'RPC shard is not ready.');
       return;
@@ -64,16 +70,21 @@ export class RpcShardWorker {
         this.describeRequests.add(value.id);
         return;
       }
+
       await this.sendManifest(value.id);
+
       return;
     }
+
     await this.invoke(value);
   }
 
   private async invoke(value: RpcInvokeMessage): Promise<void> {
     const now = Date.now();
     this.history.expire(now);
+
     if (this.active.has(value.id) || this.history.has(value.id)) return;
+
     if (value.deadline <= now) {
       await this.sendFailure(value.id, Code.DeadlineExceeded, 'RPC deadline exceeded.');
       return;
@@ -82,12 +93,15 @@ export class RpcShardWorker {
       await this.sendFailure(value.id, Code.ResourceExhausted, 'RPC shard request limit exceeded.');
       return;
     }
+
     this.history.add(value.id, value.deadline);
     const controller = new AbortController();
     this.active.set(value.id, controller);
+
     try {
       if (Buffer.byteLength(value.payload) > this.maxPayloadBytes)
         throw new ConnectError('RPC payload limit exceeded.', Code.ResourceExhausted);
+
       const payload = await this.executor.invoke(value.method, Buffer.from(value.payload, 'utf8'), {
         requestId: value.id,
         identity: Object.freeze({

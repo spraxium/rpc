@@ -18,6 +18,7 @@ export class ProcessIpcPeer implements RpcIpcPeer {
         reject(RpcFailureMapper.ipcUnavailable());
         return;
       }
+
       process.send(message, (error) => {
         if (error) reject(RpcFailureMapper.ipcUnavailable());
         else resolve();

@@ -9,6 +9,7 @@ export class GuildService {
   findStats(guildId: string) {
     const guild = this.client.guilds.cache.get(guildId);
     if (!guild) return undefined;
+
     return { members: guild.memberCount, premium: guild.premiumTier > 0, shardId: guild.shardId };
   }
 }

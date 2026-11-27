@@ -50,6 +50,7 @@ export class GuildRpcService {
   get({ guildId }: { guildId: string }) {
     const guild = this.discord.guilds.cache.get(guildId);
     if (!guild) throw new RpcError('Guild not found.', Code.NotFound);
+
     return { id: guild.id, name: guild.name };
   }
 }

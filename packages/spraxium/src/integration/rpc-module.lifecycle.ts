@@ -16,7 +16,9 @@ export class RpcModuleLifecycle implements RpcApplicationLifecycle {
 
   onBoot(): void {
     this.registry = this.container.get<RpcRegistry>(RpcRegistry);
+
     if (!this.registry) throw new Error('RpcModule must provide RpcRegistry.');
+
     for (const instance of this.pendingInstances) this.registry.scan(instance);
     this.pendingInstances.length = 0;
   }
@@ -33,6 +35,7 @@ export class RpcModuleLifecycle implements RpcApplicationLifecycle {
   private lifecycle(): RpcLifecycle {
     const lifecycle = this.container.get<RpcLifecycle>(RpcLifecycle);
     if (!lifecycle) throw new Error('RpcModule must provide RpcLifecycle.');
+
     return lifecycle;
   }
 }

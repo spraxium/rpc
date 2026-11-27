@@ -15,6 +15,7 @@ export class RpcIpcValidator {
       value.id.length > 128
     )
       return false;
+
     switch (value.kind) {
       case 'describe':
       case 'cancel':
@@ -73,17 +74,21 @@ export class RpcIpcValidator {
 
   private static isStringArray(value: unknown): value is Array<string> {
     if (!Array.isArray(value)) return false;
+
     for (const item of value) {
       if (typeof item !== 'string') return false;
     }
+
     return true;
   }
 
   private static isDescriptionArray(value: unknown): value is Array<RpcHandlerDescription> {
     if (!Array.isArray(value)) return false;
+
     for (const item of value) {
       if (!RpcIpcValidator.isDescription(item)) return false;
     }
+
     return true;
   }
 }

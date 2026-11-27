@@ -13,7 +13,9 @@ class PendingShard extends EventEmitter {
 
   send(message: RpcIpcMessage): Promise<void> {
     if (this.failSynchronously) throw new Error('Closed IPC channel');
+
     this.sent.push(message);
+
     return Promise.resolve();
   }
 }
@@ -31,6 +33,7 @@ describe('pending shard requests', () => {
       controller.signal,
       finish,
     );
+
     await expect(request.start()).rejects.toMatchObject({ code: Code.Canceled });
     expect(shard.sent).toHaveLength(0);
     expect(finish).toHaveBeenCalledExactlyOnceWith('canceled');
@@ -47,13 +50,20 @@ describe('pending shard requests', () => {
       finish,
     );
     const completion = request.start();
+
     expect(request.start()).toBe(completion);
+
     request.finish({ rpc: RPC_IPC, kind: 'result', id: 'completed', payload: 'null' });
+
     expect(finish).not.toHaveBeenCalled();
+
     const response: RpcIpcMessage = { rpc: RPC_IPC, kind: 'manifest', id: 'completed', handlers: [] };
     request.finish(response);
+
     await expect(completion).resolves.toEqual(response);
+
     request.cancel();
+
     expect(shard.sent).toHaveLength(1);
     expect(finish).toHaveBeenCalledOnce();
   });
@@ -69,6 +79,7 @@ describe('pending shard requests', () => {
       undefined,
       finish,
     );
+
     await expect(request.start()).rejects.toMatchObject({ code: Code.Unavailable });
     expect(finish).toHaveBeenCalledExactlyOnceWith('failed');
   });

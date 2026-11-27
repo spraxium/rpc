@@ -53,6 +53,7 @@ export class NodeRpcClient<
 
   close(): void {
     if (this.closed) return;
+
     this.closed = true;
     for (const controller of this.pending) controller.abort();
     this.pending.clear();

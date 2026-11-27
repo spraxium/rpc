@@ -14,12 +14,14 @@ export class ConnectRpcConnection implements RpcGatewayConnection {
 
   constructor(private readonly options: ResolvedRpcClientOptions) {
     const url = new URL(options.url);
+
     if (options.httpVersion === '1.1') {
       this.agent =
         url.protocol === 'https:' ? new HttpsAgent({ keepAlive: true }) : new HttpAgent({ keepAlive: true });
     } else {
       this.sessionManager = new Http2SessionManager(url);
     }
+
     this.gateway = createClient(RpcGateway, this.createTransport());
   }
 

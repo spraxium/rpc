@@ -27,6 +27,7 @@ export class RpcExecutor implements RpcDispatcher {
     if (this.stopping) throw new ConnectError('RPC is shutting down.', Code.Unavailable);
     if (this.active.size >= this.config.maxConcurrentCalls)
       throw new ConnectError('RPC concurrency limit exceeded.', Code.ResourceExhausted);
+
     const handler = this.registry.get(method);
     RpcAccessPolicy.authorize(handler, context.identity);
     const input = this.decodeInput(payload);
@@ -35,14 +36,17 @@ export class RpcExecutor implements RpcDispatcher {
     const execution = invocation.run();
     this.active.set(execution, invocation);
     void execution.finally(() => this.release(execution, invocation)).catch(() => undefined);
+
     return RpcCancellation.wait(execution, invocation.controller.signal);
   }
 
   async close(graceMs: number): Promise<void> {
     this.stopping = true;
     await RpcCancellation.waitForSettled(this.active.keys(), graceMs);
+
     for (const invocation of this.active.values())
       invocation.controller.abort(new ConnectError('RPC is shutting down.', Code.Unavailable));
+
     this.active.clear();
   }
 

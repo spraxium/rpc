@@ -8,13 +8,16 @@ export class JsonCodec {
     this.validate(value, new Set(), 0);
     const bytes = this.encoder.encode(JSON.stringify(value));
     if (bytes.byteLength > maxBytes) throw new RangeError('JSON payload exceeds the configured limit.');
+
     return bytes;
   }
 
   decode(bytes: Uint8Array, maxBytes: number): JsonValue {
     if (bytes.byteLength > maxBytes) throw new RangeError('JSON payload exceeds the configured limit.');
+
     const value: unknown = JSON.parse(this.decoder.decode(bytes));
     this.validateParsed(value, 0);
+
     return value;
   }
 
@@ -23,6 +26,7 @@ export class JsonCodec {
     if (value === null || typeof value === 'string' || typeof value === 'boolean') return;
     if (typeof value === 'number' && Number.isFinite(value)) return;
     if (typeof value !== 'object' || value === null) throw new TypeError('Value is not JSON serializable.');
+
     if (Array.isArray(value)) {
       for (const entry of value) this.validateParsed(entry, depth + 1);
     } else {
@@ -36,6 +40,7 @@ export class JsonCodec {
     if (typeof value === 'number' && Number.isFinite(value)) return;
     if (typeof value !== 'object' || value === null) throw new TypeError('Value is not JSON serializable.');
     if (ancestors.has(value)) throw new TypeError('Circular JSON value.');
+
     const array = Array.isArray(value);
     this.validatePrototype(value, array);
     ancestors.add(value);
@@ -43,20 +48,24 @@ export class JsonCodec {
 
     for (const key of Reflect.ownKeys(value)) {
       if (array && key === 'length') continue;
+
       if (array) {
         this.validateArrayKey(key, value.length);
         arrayEntries++;
       }
+
       const descriptor = Object.getOwnPropertyDescriptor(value, key);
       if (typeof key !== 'string' || !descriptor?.enumerable || !('value' in descriptor)) {
         throw new TypeError('JSON properties must be enumerable data properties.');
       }
+
       this.validate(descriptor.value, ancestors, depth + 1);
     }
 
     if (array && arrayEntries !== value.length) {
       throw new TypeError('Sparse arrays and custom array properties are not supported.');
     }
+
     ancestors.delete(value);
   }
 

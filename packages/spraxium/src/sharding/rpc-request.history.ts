@@ -14,6 +14,7 @@ export class RpcRequestHistory {
 
   add(id: string, deadline: number): void {
     if (this.ids.has(id)) return;
+
     this.ids.add(id);
     const entry = { id, deadline };
     let index = this.expirations.length;
@@ -22,6 +23,7 @@ export class RpcRequestHistory {
     while (index > 0) {
       const parent = Math.floor((index - 1) / 2);
       if (this.expirations[parent].deadline <= deadline) break;
+
       this.expirations[index] = this.expirations[parent];
       index = parent;
     }
@@ -44,18 +46,22 @@ export class RpcRequestHistory {
   private removeEarliest(): void {
     const last = this.expirations.pop();
     if (!last || this.expirations.length === 0) return;
+
     let index = 0;
     let child = 1;
 
     while (child < this.expirations.length) {
       const right = child + 1;
+
       if (
         right < this.expirations.length &&
         this.expirations[right].deadline < this.expirations[child].deadline
       ) {
         child = right;
       }
+
       if (last.deadline <= this.expirations[child].deadline) break;
+
       this.expirations[index] = this.expirations[child];
       index = child;
       child = index * 2 + 1;

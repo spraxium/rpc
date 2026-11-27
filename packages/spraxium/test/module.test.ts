@@ -31,6 +31,7 @@ describe('native RPC module lifecycle', () => {
     container.set(RpcRegistry, registry);
     module.onBoot();
     handler.value = 42;
+
     expect(
       registry.get('feature.value').execute(null, {
         identity: { id: 'test', permissions: [] },
@@ -43,6 +44,7 @@ describe('native RPC module lifecycle', () => {
 
   it('keeps handler discovery scoped to each application', () => {
     const registries: Array<RpcRegistry> = [];
+
     for (const value of [1, 2]) {
       const container = new SpraxiumContainer();
       const registry = new RpcRegistry();
@@ -54,6 +56,7 @@ describe('native RPC module lifecycle', () => {
       module.onBoot();
       registries.push(registry);
     }
+
     expect(registries[0].get('feature.value')).not.toBe(registries[1].get('feature.value'));
     expect(registries[0].descriptions()).toHaveLength(1);
     expect(registries[1].descriptions()).toHaveLength(1);
@@ -77,13 +80,20 @@ describe('native RPC module lifecycle', () => {
     const module = new RpcModuleLifecycle(container);
     module.onBoot();
     lifecycle.onBoot();
+
     expect(start).not.toHaveBeenCalled();
+
     await module.onApplicationReady();
+
     expect(start).toHaveBeenCalledOnce();
+
     await module.onShutdown();
     await lifecycle.onShutdown();
+
     expect(close).toHaveBeenCalledOnce();
+
     await module.onApplicationReady();
+
     expect(start).toHaveBeenCalledOnce();
   });
 });

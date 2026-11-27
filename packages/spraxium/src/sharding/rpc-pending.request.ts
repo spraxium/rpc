@@ -30,29 +30,36 @@ export class RpcPendingRequest {
 
   start(): Promise<RpcIpcMessage> {
     if (this.started || this.settled) return this.completion;
+
     if (this.signal?.aborted) {
       this.finish(undefined, RpcFailureMapper.fromCancellation(this.signal));
       return this.completion;
     }
+
     this.started = true;
     this.timer = setTimeout(this.abort, this.timeoutMs);
     this.signal?.addEventListener('abort', this.abort, { once: true });
+
     try {
       void this.shard.send(this.message).catch(this.sendFailed.bind(this));
     } catch {
       this.sendFailed();
     }
+
     return this.completion;
   }
 
   finish(response?: RpcIpcMessage, error?: ConnectError): void {
     if (this.settled) return;
+
     const expectedKind = this.message.kind === 'describe' ? 'manifest' : 'result';
     if (response && response.kind !== expectedKind && response.kind !== 'error') return;
+
     this.settled = true;
     clearTimeout(this.timer);
     this.signal?.removeEventListener('abort', this.abort);
     this.onFinish(this.message.id);
+
     if (error) this.reject?.(error);
     else if (response?.kind === 'error') this.reject?.(new ConnectError(response.message, response.code));
     else if (response) this.resolve?.(response);
@@ -61,6 +68,7 @@ export class RpcPendingRequest {
 
   cancel(error?: unknown): void {
     if (this.settled) return;
+
     const reason =
       error instanceof ConnectError
         ? error
